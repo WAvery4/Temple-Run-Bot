@@ -3,7 +3,7 @@ from mss import mss
 from PIL import Image
 import numpy as np
 
-dim = {'top': 0, 'left': 0, 'width': 1000, 'height': 1000}
+dim = {'top': 0, 'left': 0, 'width': 540, 'height': 960}
 
 def main():
     with mss() as sct:
