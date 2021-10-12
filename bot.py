@@ -20,20 +20,40 @@ TREE_ROOT1 = cv2.imread('./Obstacles/treeRoot1.png', 0)
 TREE_ROOT2 = cv2.imread('./Obstacles/treeRoot2.png', 0)
 TREE_ROOT3 = cv2.imread('./Obstacles/treeRoot3.png', 0)
 TREE_ROOT4 = cv2.imread('./Obstacles/treeRoot4.png', 0)
+TREE_TRUNK = cv2.imread('./Obstacles/treeSlide.png', 0)
 GAP1 = cv2.imread('./Obstacles/gap1.png', 0)
 GAP2 = cv2.imread('./Obstacles/gap2.png', 0)
+FIRE_TRAP = cv2.imread('./Obstacles/fireTrap.png', 0)
+LEFT_TURN = cv2.imread('./Obstacles/turnLeft.png', 0)
+RIGHT_TURN = cv2.imread('./Obstacles/turnRight.png', 0)
+CROSS1 = cv2.imread('./Obstacles/cross1.png', 0)
+CROSS2 = cv2.imread('./Obstacles/cross2.png', 0)
 
-OBSTACLES = [(TREE_ROOT1, 'treeRootSm' ), 
-             (TREE_ROOT2, 'treeRootSm'),
-             (TREE_ROOT3, 'treeRootLg'),
-             (TREE_ROOT4, 'treeRootLg'), 
-             (GAP1, 'gap'), 
-             (GAP2, 'gap')]
+OBSTACLES = [(TREE_ROOT1, 'treeRoot' ), 
+             (TREE_ROOT2, 'treeRoot'),
+             (TREE_ROOT3, 'treeRoot'),
+             (TREE_ROOT4, 'treeRoot'),
+             (TREE_TRUNK, 'treeTrunk'), 
+             (GAP1, 'gap'),
+             (GAP2, 'gap'),
+             (FIRE_TRAP, 'fireTrap'),
+             (LEFT_TURN, 'leftTurn'),
+             (RIGHT_TURN, 'rightTurn'),
+             (CROSS1, 'crossTurn'),
+             (CROSS2, 'crossTurn')]
 
-# OBSTACLES = [(GAP1, 'gap'), 
-#              (GAP2, 'gap')]
+# OBSTACLES = [(LEFT_TURN, 'leftTurn'),
+#              (RIGHT_TURN, 'rightTurn'),
+#              (CROSS1, 'rightTurn')]
 
 keyboard = Controller()
+
+def display_template_match(frame, obstacle, maxLoc):
+    startX, startY = maxLoc
+    endX = startX + obstacle.shape[1]
+    endY = startY + obstacle.shape[0]
+    cv2.rectangle(frame, (startX, startY), (endX, endY), (255, 0, 0), 3)
+    cv2.imshow('Template Matching', frame)
 
 def check_for_obstacle(frame):
     for obstacle, group in OBSTACLES:
@@ -42,39 +62,48 @@ def check_for_obstacle(frame):
 
         '''
         *** TO-DO ***
-        * Resolve double jump issues with TREE_ROOT3/4
-        * Resolve issues where gaps are sometimes undetected (something other than template matching?)
+        * Gaps are not always detected if there are coins in the way
         '''
-        if (group == 'treeRootSm' and maxVal > 0.7) or (group == 'treeRootLg' and maxVal > 0.7) or (group == 'gap' and maxVal > 0.7):
+        if ((group == 'treeRoot' or group == 'gap' or group == 'fireTrap') and maxVal > 0.7):
             keyboard.press('w')
             time.sleep(0.025)
             keyboard.release('w')
             if DEBUG:
-                startX, startY = maxLoc
-                endX = startX + obstacle.shape[1]
-                endY = startY + obstacle.shape[0]
-                cv2.rectangle(frame, (startX, startY), (endX, endY), (255, 0, 0), 3)
-                cv2.imshow('Template Matching', frame)
+                display_template_match(frame, obstacle, maxLoc)
+                # print(maxVal, group)
+                # print()
+
+        elif ((group == 'leftTurn' or group == 'rightTurn') and maxVal > 0.6):
+            if group == 'leftTurn':
+                keyboard.press('a')
+                time.sleep(0.025)
+                keyboard.release('a')
+            else:
+                keyboard.press('d')
+                time.sleep(0.025)
+                keyboard.release('d')
+            if DEBUG:
+                display_template_match(frame, obstacle, maxLoc)
                 print(maxVal, group)
                 print()
 
-        '''
-        *** TO-DO ***
-        * Implement logic for turning left/right based on template match.
-        '''
-        # elif (group == 'rightTurn' and maxVal > 0.7):
-        #     keyboard.press('d')
-        #     time.sleep(0.05)
-        #     keyboard.release('d')
-        #     if DEBUG:
-        #         startX, startY = maxLoc
-        #         endX = startX + obstacle.shape[1]
-        #         endY = startY + obstacle.shape[0]
-        #         cv2.rectangle(frame, (startX, startY), (endX, endY), (255, 0, 0), 3)
-        #         cv2.imshow('Template Matching', frame)
-        #         print(maxVal)
+        elif(group == 'crossTurn' and maxVal > 0.55):
+            keyboard.press('d')
+            time.sleep(0.025)
+            keyboard.release('d')
+            if DEBUG:
+                display_template_match(frame, obstacle, maxLoc)
+                print(maxVal, group)
+                print()
 
-        
+        elif(group == 'treeTrunk' and maxVal > 0.5):
+            keyboard.press('s')
+            time.sleep(0.025)
+            keyboard.release('s')
+            if DEBUG:
+                display_template_match(frame, obstacle, maxLoc)
+                print(maxVal, group)
+                print()
 
 
 def main():
