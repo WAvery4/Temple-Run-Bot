@@ -37,14 +37,13 @@ OBSTACLES = [(TREE_ROOT1, 'treeRoot' ),
              (GAP1, 'gap'),
              (GAP2, 'gap'),
              (FIRE_TRAP, 'fireTrap')]
-            #  (LEFT_TURN, 'leftTurn'),
-            #  (RIGHT_TURN, 'rightTurn'),
-            #  (CROSS1, 'crossTurn'),
-            #  (CROSS2, 'crossTurn')]
 
 kb = Controller()
 
 def display_template_match(frame, obstacle, maxLoc):
+    '''
+    Displays the bounding box for a template match.
+    '''
     startX, startY = maxLoc
     endX = startX + obstacle.shape[1]
     endY = startY + obstacle.shape[0]
@@ -52,16 +51,14 @@ def display_template_match(frame, obstacle, maxLoc):
     cv2.imshow('Template Matching', frame)
 
 def check_for_obstacle(frame, debug=0):
+    '''
+    Loops through the obstacles associated with the current state and makes an action
+    if that obstacle is detected.
+    '''
     for obstacle, group in OBSTACLES:
         result = cv2.matchTemplate(frame, obstacle, cv2.TM_CCOEFF_NORMED)
         minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(result)
 
-        '''
-        *** TO-DO ***
-        * Gaps are not always detected if there are coins in the way
-        * Explore alternatives for making turns as it is not the most reliable
-          to use template matching and it significantly lowers frame rate.
-        '''
         if ((group == 'treeRoot' or group == 'gap' or group == 'fireTrap') and maxVal > 0.7):
             kb.press('w')
             sleep(0.025)
@@ -81,7 +78,10 @@ def check_for_obstacle(frame, debug=0):
                 print()
 
 def check_for_turn(frame):
-    # patch averaging
+    '''
+    Averages the pixels of three patches located on the screen and performs
+    a turn based on the results.
+    '''
     patch0 = frame[100:150, 50:100]
     patch1 = frame[50:100, 250:300]
     patch2 = frame[100:150, 440:490]
