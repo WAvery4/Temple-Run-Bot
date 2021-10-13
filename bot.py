@@ -1,12 +1,12 @@
 import cv2
-import time
+from time import time, sleep
 import numpy as np
-from mss import mss
-from PIL import Image
-from pynput.keyboard import Key, Controller
+import matplotlib.pyplot as plt
+from mss.windows import MSS as mss
+from pynput.keyboard import Controller, Listener
 
-RECORDING = 1   # set this flag high if you want the screen recorded
-DEBUG = 1       # set this flag high to enable debugging output
+RECORDING = 0          # set this flag high if you want the screen recorded
+DEBUG = 0              # set this flag high to enable debugging in the main loop
 
 dim = {'top': 0, 'left': 0, 'width': 540, 'height': 960}
 
@@ -36,17 +36,13 @@ OBSTACLES = [(TREE_ROOT1, 'treeRoot' ),
              (TREE_TRUNK, 'treeTrunk'), 
              (GAP1, 'gap'),
              (GAP2, 'gap'),
-             (FIRE_TRAP, 'fireTrap'),
-             (LEFT_TURN, 'leftTurn'),
-             (RIGHT_TURN, 'rightTurn'),
-             (CROSS1, 'crossTurn'),
-             (CROSS2, 'crossTurn')]
+             (FIRE_TRAP, 'fireTrap')]
+            #  (LEFT_TURN, 'leftTurn'),
+            #  (RIGHT_TURN, 'rightTurn'),
+            #  (CROSS1, 'crossTurn'),
+            #  (CROSS2, 'crossTurn')]
 
-# OBSTACLES = [(LEFT_TURN, 'leftTurn'),
-#              (RIGHT_TURN, 'rightTurn'),
-#              (CROSS1, 'rightTurn')]
-
-keyboard = Controller()
+kb = Controller()
 
 def display_template_match(frame, obstacle, maxLoc):
     startX, startY = maxLoc
@@ -55,7 +51,7 @@ def display_template_match(frame, obstacle, maxLoc):
     cv2.rectangle(frame, (startX, startY), (endX, endY), (255, 0, 0), 3)
     cv2.imshow('Template Matching', frame)
 
-def check_for_obstacle(frame):
+def check_for_obstacle(frame, debug=0):
     for obstacle, group in OBSTACLES:
         result = cv2.matchTemplate(frame, obstacle, cv2.TM_CCOEFF_NORMED)
         minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(result)
@@ -63,69 +59,77 @@ def check_for_obstacle(frame):
         '''
         *** TO-DO ***
         * Gaps are not always detected if there are coins in the way
+        * Explore alternatives for making turns as it is not the most reliable
+          to use template matching and it significantly lowers frame rate.
         '''
         if ((group == 'treeRoot' or group == 'gap' or group == 'fireTrap') and maxVal > 0.7):
-            keyboard.press('w')
-            time.sleep(0.025)
-            keyboard.release('w')
-            if DEBUG:
-                display_template_match(frame, obstacle, maxLoc)
-                # print(maxVal, group)
-                # print()
-
-        elif ((group == 'leftTurn' or group == 'rightTurn') and maxVal > 0.6):
-            if group == 'leftTurn':
-                keyboard.press('a')
-                time.sleep(0.025)
-                keyboard.release('a')
-            else:
-                keyboard.press('d')
-                time.sleep(0.025)
-                keyboard.release('d')
-            if DEBUG:
+            kb.press('w')
+            sleep(0.025)
+            kb.release('w')
+            if debug:
                 display_template_match(frame, obstacle, maxLoc)
                 print(maxVal, group)
                 print()
 
-        elif(group == 'crossTurn' and maxVal > 0.55):
-            keyboard.press('d')
-            time.sleep(0.025)
-            keyboard.release('d')
-            if DEBUG:
+        elif(group == 'treeTrunk' and maxVal > 0.55):
+            kb.press('s')
+            sleep(0.025)
+            kb.release('s')
+            if debug:
                 display_template_match(frame, obstacle, maxLoc)
                 print(maxVal, group)
                 print()
 
-        elif(group == 'treeTrunk' and maxVal > 0.5):
-            keyboard.press('s')
-            time.sleep(0.025)
-            keyboard.release('s')
-            if DEBUG:
-                display_template_match(frame, obstacle, maxLoc)
-                print(maxVal, group)
-                print()
-
+def check_for_turn(frame):
+    # patch averaging
+    patch0 = frame[100:150, 50:100]
+    patch1 = frame[50:100, 250:300]
+    patch2 = frame[100:150, 440:490]
+    patch0_average = np.average(patch0)
+    patch1_average = np.average(patch1)
+    patch2_average = np.average(patch2)
+    if patch1_average < 80:
+        if patch0_average > 80:
+            kb.press('a')
+            sleep(0.025)
+            kb.release('a')
+        elif patch2_average > 80:
+            kb.press('d')
+            sleep(0.025)
+            kb.release('d') 
 
 def main():
-    # can vary the third parameter (FPS) to change the speed of the video
-    output = cv2.VideoWriter('ScreenCaptures/temple_run_4.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30, (540, 960), 0)
+    if RECORDING:
+        output = cv2.VideoWriter('ScreenCaptures/temple_run_4.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30, (540, 260), 0)
 
+    if DEBUG:
+        loop_time = time()
+    
     with mss() as sct:
         while True:
             frame = np.array(sct.grab(dim))
-
-            bgr_frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
-
             grayscale_frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2GRAY)
+            # focus on a 260x640 region of the frame
+            obstacle_region = grayscale_frame[350:610,:] 
+            
+            # template matching
+            check_for_obstacle(obstacle_region, debug=1)
 
-            check_for_obstacle(grayscale_frame[350:609, :])
+            # averaging patch histograms
+            check_for_turn(obstacle_region)
 
             if RECORDING:
-                output.write(grayscale_frame)
+                output.write(obstacle_region)
 
-            if cv2.waitKey(25) & 0xFF == ord('q'):
+            # debug the loop rate
+            if DEBUG:
+                print('FPS {}'.format(1 / (time() - loop_time)))
+                loop_time = time()
+
+            if cv2.waitKey(1) == ord('q'):
                 cv2.destroyAllWindows()
-                output.release()
+                if RECORDING:
+                    output.release()
                 break
 
 if __name__ == "__main__":
