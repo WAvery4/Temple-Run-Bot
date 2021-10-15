@@ -1,0 +1,91 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Oct 14 22:48:16 2021
+
+@author: lwing
+"""
+
+import cv2
+import numpy as np
+
+data = np.load("D:/371Q_Project/TempleRun/Data/training_data.npy", allow_pickle=True)
+targets = np.load("D:/371Q_Project/TempleRun/Data/target_data.npy", allow_pickle=True)
+
+print(f'Image Data Shape: {data.shape}')
+print(f'targets Shape: {targets.shape}')
+
+# Lets see how many of each type of move we have.
+unique_elements, counts = np.unique(targets, return_counts=True)
+print(np.asarray((unique_elements, counts)))
+
+# Store both data and targets in a list.
+# We may want to shuffle down the road.
+
+holder_list = []
+for i, image in enumerate(data):
+    holder_list.append([data[i], targets[i]])
+
+count_jump = 0
+count_left = 0
+count_right = 0
+count_slide = 0
+count_leanright = 0
+count_leanleft = 0
+count_nothing = 0
+count_jumpleanright = 0
+count_jumpleanleft = 0
+count_slideleanright = 0
+count_slideleanleft = 0
+count_rightleanright = 0
+count_rightleanleft = 0
+count_leftleanright = 0
+count_leftleanleft = 0
+
+for data in holder_list:
+    #print(data[1])
+    if data[1] == 'W':
+        count_jump += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/Jump/H7-u{count_jump}.png", data[0]) 
+    elif data[1] == 'A':
+        count_left += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/Left/H7-l{count_left}.png", data[0]) 
+    elif data[1] == 'D':
+        count_right += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/Right/H7-r{count_right}.png", data[0]) 
+    elif data[1] == 'S':
+        count_slide += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/Slide/H7-j{count_slide}.png", data[0])
+    elif data[1] == 'I':
+        count_nothing += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/Nothing/H7-u{count_nothing}.png", data[0]) 
+    elif data[1] == 'J':
+        count_leanleft += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/LeanLeft/H7-l{count_leanleft}.png", data[0]) 
+    elif data[1] == 'L':
+        count_leanright += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/LeanRight/H7-r{count_leanright}.png", data[0])
+    elif data[1] == 'WJ':
+        count_jumpleanleft += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/JumpLeanLeft/H7-l{count_jumpleanleft}.png", data[0]) 
+    elif data[1] == 'WL':
+        count_jumpleanright += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/JumpLeanRight/H7-r{count_jumpleanright}.png", data[0])
+    elif data[1] == 'SJ':
+        count_slideleanleft += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/SlideLeanLeft/H7-l{count_slideleanleft}.png", data[0]) 
+    elif data[1] == 'SL':
+        count_slideleanright += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/SlideLeanRight/H7-r{count_slideleanright}.png", data[0])
+    elif data[1] == 'AJ':
+        count_leftleanleft += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/LeftLeanLeft/H7-l{count_leftleanleft}.png", data[0]) 
+    elif data[1] == 'AL':
+        count_leftleanright += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/LeftLeanRight/H7-r{count_leftleanright}.png", data[0])
+    elif data[1] == 'DJ':
+        count_rightleanleft += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/RightLeanLeft/H7-l{count_rightleanleft}.png", data[0]) 
+    elif data[1] == 'DL':
+        count_rightleanright += 1
+        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/RightLeanRight/H7-r{count_rightleanright}.png", data[0])
+    
