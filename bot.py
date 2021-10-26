@@ -5,38 +5,61 @@ import matplotlib.pyplot as plt
 from mss.windows import MSS as mss
 from pynput.keyboard import Controller, Listener
 
-RECORDING = 0          # set this flag high if you want the screen recorded
+RECORDING = 1          # set this flag high if you want the screen recorded
 DEBUG = 0              # set this flag high to enable debugging in the main loop
 
 dim = {'top': 0, 'left': 0, 'width': 540, 'height': 960}
 
 '''
-Obstacle Templates
+Temple Obstacle Templates
 
 *** TO-DO ***
 * Get images of the remaining obstacles
 '''
-TREE_ROOT1 = cv2.imread('./Obstacles/treeRoot1.png', 0)
-TREE_ROOT2 = cv2.imread('./Obstacles/treeRoot2.png', 0)
-TREE_ROOT3 = cv2.imread('./Obstacles/treeRoot3.png', 0)
-TREE_ROOT4 = cv2.imread('./Obstacles/treeRoot4.png', 0)
-TREE_TRUNK = cv2.imread('./Obstacles/treeSlide.png', 0)
-GAP1 = cv2.imread('./Obstacles/gap1.png', 0)
-GAP2 = cv2.imread('./Obstacles/gap2.png', 0)
-FIRE_TRAP = cv2.imread('./Obstacles/fireTrap.png', 0)
-LEFT_TURN = cv2.imread('./Obstacles/turnLeft.png', 0)
-RIGHT_TURN = cv2.imread('./Obstacles/turnRight.png', 0)
-CROSS1 = cv2.imread('./Obstacles/cross1.png', 0)
-CROSS2 = cv2.imread('./Obstacles/cross2.png', 0)
+TREE_ROOT1 = cv2.imread('./Obstacles/Temple/treeRoot1.png', 0)
+TREE_ROOT2 = cv2.imread('./Obstacles/Temple/treeRoot2.png', 0)
+TREE_ROOT3 = cv2.imread('./Obstacles/Temple/treeRoot3.png', 0)
+TREE_ROOT4 = cv2.imread('./Obstacles/Temple/treeRoot4.png', 0)
+TREE_TRUNK = cv2.imread('./Obstacles/Temple/treeSlide.png', 0)
+GAP1 = cv2.imread('./Obstacles/Temple/gap1.png', 0)
+GAP2 = cv2.imread('./Obstacles/Temple/gap2.png', 0)
+FIRE_TRAP = cv2.imread('./Obstacles/Temple/fireTrap.png', 0)
+ROCK_LEVEL = cv2.imread('./Obstacles/Temple/rockLevel.png', 0)
+ROCK_LEVEL2 = cv2.imread('./Obstacles/Temple/rockLevel2.png', 0)
+ALTERNATE_LEVEL = cv2.imread('./Obstacles/Temple/waterLevel.png', 0)
 
-OBSTACLES = [(TREE_ROOT1, 'treeRoot' ), 
-             (TREE_ROOT2, 'treeRoot'),
-             (TREE_ROOT3, 'treeRoot'),
-             (TREE_ROOT4, 'treeRoot'),
-             (TREE_TRUNK, 'treeTrunk'), 
-             (GAP1, 'gap'),
-             (GAP2, 'gap'),
-             (FIRE_TRAP, 'fireTrap')]
+'''
+Rock Obstacle Templates
+
+*** TO-DO ***
+* Get images of the remaining obstacles
+'''
+
+'''
+Water Obstacle Templates
+
+*** TO-DO ***
+* Get images of the remaining obstacles
+'''
+TIKI = cv2.imread('./Obstacles/Water/tiki.png', 0)
+WATER_GAP = cv2.imread('./Obstacles/Water/waterGap.png', 0)
+TEMPLE_LEVEL = cv2.imread('./Obstacles/Water/templeLevel.png', 0)
+
+TEMPLE_OBSTACLES = [(TREE_ROOT1, 'treeRoot' ), 
+                    (TREE_ROOT2, 'treeRoot'),
+                    (TREE_ROOT3, 'treeRoot'),
+                    (TREE_ROOT4, 'treeRoot'),
+                    (TREE_TRUNK, 'treeTrunk'), 
+                    (GAP1, 'gap'),
+                    (GAP2, 'gap'),
+                    (FIRE_TRAP, 'fireTrap'),
+                    (ALTERNATE_LEVEL, 'alternateLevel')]
+
+ALTERNATE_OBSTACLES = [(TIKI, 'tiki'),
+                       (WATER_GAP, 'waterGap'),
+                       (TEMPLE_LEVEL, 'templeLevel')]
+
+OBSTACLES = TEMPLE_OBSTACLES
 
 kb = Controller()
 
@@ -55,6 +78,10 @@ def check_for_obstacle(frame, debug=0):
     Loops through the obstacles associated with the current state and makes an action
     if that obstacle is detected.
     '''
+    global OBSTACLES
+    global TEMPLE_OBSTACLES
+    global ALTERNATE_OBSTACLES
+
     for obstacle, group in OBSTACLES:
         result = cv2.matchTemplate(frame, obstacle, cv2.TM_CCOEFF_NORMED)
         minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(result)
@@ -68,7 +95,7 @@ def check_for_obstacle(frame, debug=0):
                 print(maxVal, group)
                 print()
 
-        elif(group == 'treeTrunk' and maxVal > 0.55):
+        elif (group == 'treeTrunk' and maxVal > 0.55):
             kb.press('s')
             sleep(0.025)
             kb.release('s')
@@ -76,6 +103,25 @@ def check_for_obstacle(frame, debug=0):
                 display_template_match(frame, obstacle, maxLoc)
                 print(maxVal, group)
                 print()
+
+        elif (group == 'alternateLevel' and maxVal > 0.5):
+            kb.press('w')
+            sleep(0.025)
+            kb.release('w')
+            OBSTACLES = ALTERNATE_OBSTACLES
+            if debug:
+                display_template_match(frame, obstacle, maxLoc)
+                print(maxVal, group)
+
+        elif (group == 'templeLevel' and maxVal > 0.5):
+            kb.press('w')
+            sleep(0.025)
+            kb.release('w')
+            OBSTACLES = TEMPLE_OBSTACLES
+            if debug:
+                display_template_match(frame, obstacle, maxLoc)
+                print(maxVal, group)
+
 
 def check_for_turn(frame):
     '''
