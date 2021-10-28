@@ -50,10 +50,10 @@ def main():
             count +=1
             last_time = time.time()
             image = grab_screen(region=(dim['top'], dim['left'], dim['width'], dim['height']))
-            #image = cv2.cvtbColor(image, cv2.COLOR_BGR2GRAY)
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             #image = cv2.Canny(image, threshold1=119, threshold2=250)
 
-            image = cv2.resize(image, (224, 224))
+            image = cv2.resize(image, (256, 256))
 
             # Debug line to show image
             #cv2.imshow("AI Peak", image)
