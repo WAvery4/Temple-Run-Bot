@@ -171,6 +171,7 @@ def check_for_obstacle(frame, debug=0):
                     display_template_match(frame, obstacle, maxLoc)
                     print(maxVal, name)
                     print()
+                return
 
             elif (name == 'treeRoot2' and maxVal > 0.65):
                 kb.press('w')
@@ -180,6 +181,7 @@ def check_for_obstacle(frame, debug=0):
                     display_template_match(frame, obstacle, maxLoc)
                     print(maxVal, name)
                     print()
+                return
 
             elif (name == 'treeTrunk' and maxVal > 0.55):
                 kb.press('s')
@@ -189,6 +191,7 @@ def check_for_obstacle(frame, debug=0):
                     display_template_match(frame, obstacle, maxLoc)
                     print(maxVal, name)
                     print()
+                return
 
             # elif (name == 'alternateLevel' and maxVal > 0.5):
             #     kb.press('w')
@@ -207,6 +210,7 @@ def check_for_obstacle(frame, debug=0):
                 if debug:
                     display_template_match(frame, obstacle, maxLoc)
                     print(maxVal, name)
+                return
 
         # algorithm for feature matching
         if method == 'feature':
@@ -230,6 +234,7 @@ def check_for_obstacle(frame, debug=0):
                 kb.release('w')
                 if debug:
                     print(name + ': ' + str(matches))
+                return
 
             elif (name == 'fireTrap' and matches > 20):
                 kb.press('s')
@@ -237,6 +242,9 @@ def check_for_obstacle(frame, debug=0):
                 kb.release('s')
                 if debug:
                     print(name + ': ' + str(matches))
+                return
+
+        check_for_turn(frame)
 
 
 
@@ -277,9 +285,6 @@ def main():
             
             # template matching
             check_for_obstacle(obstacle_region, debug=1)
-
-            # averaging patch histograms
-            check_for_turn(obstacle_region)
 
             if RECORDING:
                 output.write(obstacle_region)
