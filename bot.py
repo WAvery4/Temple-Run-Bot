@@ -3,9 +3,10 @@ from time import time, sleep
 import numpy as np
 import matplotlib.pyplot as plt
 from mss.windows import MSS as mss
-from pynput.keyboard import Controller, Listener, Key
+from pynput.keyboard import Controller, Listener, Key, KeyCode
+import threading
 
-RECORDING = 1  # set this flag high if you want the screen recorded
+RECORDING = 0  # set this flag high if you want the screen recorded
 DEBUG = 0  # set this flag high to enable debugging in the main loop
 
 dim = {'top': 0, 'left': 0, 'width': 540, 'height': 960}
@@ -19,6 +20,7 @@ TREE_ROOT1 = cv2.imread('./Obstacles/Temple/treeRoot1.png', 0)
 TREE_ROOT2 = cv2.imread('./Obstacles/Temple/treeRoot2.png', 0)
 TREE_ROOT3 = cv2.imread('./Obstacles/Temple/treeRoot3.png', 0)
 TREE_ROOT4 = cv2.imread('./Obstacles/Temple/treeRoot4.png', 0)
+TREE_ROOT5 = cv2.imread('./Obstacles/Temple/treeRoot5.png', 0)
 TREE_TRUNK = cv2.imread('./Obstacles/Temple/treeSlide.png', 0)
 GAP1 = cv2.imread('./Obstacles/Temple/gap1.png', 0)
 GAP2 = cv2.imread('./Obstacles/Temple/gap2.png', 0)
@@ -26,6 +28,7 @@ FIRE_TRAP = cv2.imread('./Obstacles/Temple/fireTrap.png', 0)
 ROCK_LEVEL = cv2.imread('./Obstacles/Temple/rockLevel.png', 0)
 ROCK_LEVEL2 = cv2.imread('./Obstacles/Temple/rockLevel2.png', 0)
 WATER_LEVEL = cv2.imread('./Obstacles/Temple/waterLevel.png', 0)
+TURN = cv2.imread('./Obstacles/Temple/turn_template.png', 0)
 
 '''
 Rock Obstacle Templates
@@ -47,13 +50,15 @@ TEMPLE_OBSTACLES = [(TREE_ROOT1, 'treeRoot'),
                     (TREE_ROOT2, 'treeRoot'),
                     (TREE_ROOT3, 'treeRoot'),
                     (TREE_ROOT4, 'treeRoot'),
+                    (TREE_ROOT5, 'treeRoot'),
                     (TREE_TRUNK, 'treeTrunk'),
                     (GAP1, 'gap'),
                     (GAP2, 'gap'),
                     (FIRE_TRAP, 'fireTrap'),
                     (ROCK_LEVEL, 'rockLevel'),
-                    (ROCK_LEVEL2, 'rockLevel2'),
-                    (WATER_LEVEL, 'waterLevel')]
+                    (ROCK_LEVEL2, 'rockLevel'),
+                    (WATER_LEVEL, 'waterLevel'),
+                    (TURN, 'turn')]
 
 ALTERNATE_OBSTACLES = [(TIKI, 'tiki'),
                        (WATER_GAP, 'waterGap'),
@@ -97,6 +102,7 @@ def check_for_obstacle(frame, debug=0):
                 display_template_match(frame, obstacle, maxLoc)
                 print(maxVal, group)
                 print()
+            return
 
         elif (group == 'gap') and maxVal > 0.7:
             kb.press('w')
@@ -106,6 +112,7 @@ def check_for_obstacle(frame, debug=0):
                 display_template_match(frame, obstacle, maxLoc)
                 print(maxVal, group)
                 print()
+            return
 
         elif (group == 'fireTrap') and maxVal > 0.7:
             kb.press('s')
@@ -115,6 +122,7 @@ def check_for_obstacle(frame, debug=0):
                 display_template_match(frame, obstacle, maxLoc)
                 print(maxVal, group)
                 print()
+            return
 
         elif (group == 'treeTrunk' or group == 'stoneTree') and maxVal > 0.55:
             kb.press('s')
@@ -124,6 +132,17 @@ def check_for_obstacle(frame, debug=0):
                 display_template_match(frame, obstacle, maxLoc)
                 print(maxVal, group)
                 print()
+            return
+
+        # elif group == 'turn' and maxVal > 0.4:
+        #     kb.press('a')
+        #     sleep(0.025)
+        #     kb.release('a')
+        #     if debug:
+        #         display_template_match(frame, obstacle, maxLoc)
+        #         print(maxVal, group)
+        #         print()
+        #     return
 
         elif (group == 'waterGap' or group == 'tiki') and maxVal > 0.45:
             kb.press('w')
@@ -133,8 +152,9 @@ def check_for_obstacle(frame, debug=0):
                 display_template_match(frame, obstacle, maxLoc)
                 print(maxVal, group)
                 print()
+            return
 
-        elif (group == 'rockLevel' or group == 'rockLevel2') and maxVal > 0.5:
+        elif group == 'rockLevel' and maxVal > 0.5:
             kb.press('w')
             sleep(0.025)
             kb.release('w')
@@ -142,6 +162,7 @@ def check_for_obstacle(frame, debug=0):
             if debug:
                 display_template_match(frame, obstacle, maxLoc)
                 print(maxVal, group)
+            return
 
         # elif group == 'waterLevel' and maxVal > 0.5:
         #     OBSTACLES = ALTERNATE_OBSTACLES
@@ -158,6 +179,8 @@ def check_for_obstacle(frame, debug=0):
                 display_template_match(frame, obstacle, maxLoc)
                 print(maxVal, group)
 
+    #check_for_turn(frame)
+
 
 def check_for_turn(frame):
     '''
@@ -165,22 +188,29 @@ def check_for_turn(frame):
     a turn based on the results.
     '''
     th, binary = cv2.threshold(frame, 75, 255, cv2.THRESH_BINARY)
-    patch0 = binary[100:150, 50:100]
+    cv2.rectangle(binary, (50, 150), (100, 200), (255, 0, 0), 3)
+    cv2.rectangle(binary, (250, 50), (300, 100), (255, 0, 0), 3)
+    cv2.rectangle(binary, (440, 150), (490, 200), (255, 0, 0), 3)
+    cv2.imshow('Turn', binary)
+
+    patch0 = binary[150:200, 50:100]
     patch1 = binary[50:100, 250:300]
-    patch2 = binary[100:150, 440:490]
+    patch2 = binary[150:200, 440:490]
     patch0_average = np.average(patch0)
     patch1_average = np.average(patch1)
     patch2_average = np.average(patch2)
-    if patch1_average < 20:
-        print(patch0_average, patch1_average, patch2_average, 'turn')
-        if patch0_average > 60:
-            kb.press('a')
-            sleep(0.025)
-            kb.release('a')
-        elif patch2_average > 60:
-            kb.press('d')
-            sleep(0.025)
-            kb.release('d')
+    # if patch1_average < 90 and (patch0_average > 100 or patch2_average > 100):
+    # print(patch0_average, patch1_average, patch2_average, 'turn')
+    if patch0_average > 100 and patch1_average < 100:
+        print(patch0_average, patch1_average, 'turn left')
+        kb.press('a')
+        sleep(0.025)
+        kb.release('a')
+    elif patch2_average > 100 and patch1_average < 100:
+        print(patch2_average, patch1_average, 'turn right')
+        kb.press('d')
+        sleep(0.025)
+        kb.release('d')
 
 
 def main():
@@ -195,13 +225,13 @@ def main():
             frame = np.array(sct.grab(dim))
             grayscale_frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2GRAY)
             # focus on a 260x640 region of the frame
-            obstacle_region = grayscale_frame[375:635, :]
+            obstacle_region = grayscale_frame[400:660, :]
 
             # template matching
             check_for_obstacle(obstacle_region, debug=1)
 
             # averaging patch histograms
-            check_for_turn(obstacle_region)
+            # check_for_turn(obstacle_region)
 
             if RECORDING:
                 output.write(obstacle_region)
@@ -217,11 +247,22 @@ def main():
                     output.release()
                 break
 
+def turn():
+    with mss() as sct:
+        while True:
+            frame = np.array(sct.grab(dim))
+            grayscale_frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2GRAY)
+            # focus on a 260x640 region of the frame
+            obstacle_region = grayscale_frame[375:635, :]
+
+            # averaging patch histograms
+            check_for_turn(obstacle_region)
+
+            if cv2.waitKey(1) == ord('q'):
+                cv2.destroyAllWindows()
+                break
+
 def on_press(key):
-    pass
-
-
-def on_release(key):
     """
     Saves the current frame when the space bar is pressed
     """
@@ -231,9 +272,35 @@ def on_release(key):
             frame = np.array(sct.grab(dim))
             image_gray = cv2.cvtColor(frame, cv2.COLOR_BGRA2GRAY)
             cv2.imwrite('./Screenshots/img' + str(time()) + '.PNG', image_gray)
+    elif key == KeyCode.from_char('a'):
+        print("Pressed a")
+    elif key == KeyCode.from_char('d'):
+        print("Pressed d")
+    elif key == KeyCode.from_char('w'):
+        print("Pressed w")
+    elif key == KeyCode.from_char('s'):
+        print("Pressed s")
+
+
+def on_release(key):
+    pass
+
+
+# def main():
+#     while(True):
+#         pass
+
 
 if __name__ == "__main__":
     listener = Listener(on_press=on_press, on_release=on_release)
     listener.start()
 
     main()
+
+    # t1 = threading.Thread(target=obstacles)
+    # t2 = threading.Thread(target=turn)
+    # t1.start()
+    # t2.start()
+    #
+    # t1.join()
+    # t2.join()
