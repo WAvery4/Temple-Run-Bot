@@ -161,9 +161,18 @@ def check_for_obstacle(frame, debug=0):
             result = cv2.matchTemplate(frame, obstacle, cv2.TM_CCOEFF_NORMED)
             _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
 
-            if ((name == 'treeRoot1' or name == 'fireTrap' or
-                 name == 'treeRoot2 ' or name == 'treeRoot3' or
+            if ((name == 'fireTrap' or
+                 name == 'treeRoot1' or name == 'treeRoot3' or
                  name == 'treeRoot4') and maxVal > 0.7):
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                if debug:
+                    display_template_match(frame, obstacle, maxLoc)
+                    print(maxVal, name)
+                    print()
+
+            elif (name == 'treeRoot2' and maxVal > 0.65):
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
