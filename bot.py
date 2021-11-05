@@ -7,7 +7,7 @@ from mss.windows import MSS as mss
 from pynput.keyboard import Controller, Listener
 
 RECORDING = 1          # set this flag high if you want the screen recorded
-DEBUG = 1              # set this flag high to enable debugging in the main loop
+DEBUG = 0              # set this flag high to enable debugging in the main loop
 
 dim = {'top': 0, 'left': 0, 'width': 540, 'height': 960}
 
@@ -38,7 +38,7 @@ TREE_ROOT4 = cv2.imread('./Obstacles/Temple/treeRoot4.png', 0)
 TREE_TRUNK = cv2.imread('./Obstacles/Temple/treeSlide.png', 0)
 GAP1 = unpickle_desc('./Obstacles/Temple/ORB/gap1.pickle')
 GAP2 = unpickle_desc('./Obstacles/Temple/ORB/gap2.pickle')
-FIRE_TRAP = cv2.imread('./Obstacles/Temple/fireTrap.png', 0)
+FIRE_TRAP = unpickle_desc('./Obstacles/Temple/ORB/fireTrap.pickle')
 ROCK_LEVEL = cv2.imread('./Obstacles/Temple/rockLevel.png', 0)
 ROCK_LEVEL2 = cv2.imread('./Obstacles/Temple/rockLevel2.png', 0)
 ALTERNATE_LEVEL = cv2.imread('./Obstacles/Temple/waterLevel.png', 0)
@@ -73,7 +73,7 @@ TEMPLE_OBSTACLES = [(TREE_ROOT1, 'treeRoot1', 'template'),
                     (TREE_TRUNK, 'treeTrunk', 'template'), 
                     (GAP1, 'gap1', 'feature'),
                     (GAP2, 'gap2', 'feature'),
-                    (FIRE_TRAP, 'fireTrap', 'template'),
+                    (FIRE_TRAP, 'fireTrap', 'feature'),
                     (ALTERNATE_LEVEL, 'alternateLevel', 'template')]
 
 ALTERNATE_OBSTACLES = [(TIKI, 'tiki', 'template'),
@@ -161,9 +161,18 @@ def check_for_obstacle(frame, debug=0):
             result = cv2.matchTemplate(frame, obstacle, cv2.TM_CCOEFF_NORMED)
             _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
 
-            if ((name == 'treeRoot1' or name == 'fireTrap' or
-                 name == 'treeRoot2 ' or name == 'treeRoot3' or
+            if ((name == 'fireTrap' or
+                 name == 'treeRoot1' or name == 'treeRoot3' or
                  name == 'treeRoot4') and maxVal > 0.7):
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                if debug:
+                    display_template_match(frame, obstacle, maxLoc)
+                    print(maxVal, name)
+                    print()
+
+            elif (name == 'treeRoot2' and maxVal > 0.65):
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -181,14 +190,14 @@ def check_for_obstacle(frame, debug=0):
                     print(maxVal, name)
                     print()
 
-            elif (name == 'alternateLevel' and maxVal > 0.5):
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
-                OBSTACLES = ALTERNATE_OBSTACLES
-                if debug:
-                    display_template_match(frame, obstacle, maxLoc)
-                    print(maxVal, name)
+            # elif (name == 'alternateLevel' and maxVal > 0.5):
+            #     kb.press('w')
+            #     sleep(0.025)
+            #     kb.release('w')
+            #     OBSTACLES = ALTERNATE_OBSTACLES
+            #     if debug:
+            #         display_template_match(frame, obstacle, maxLoc)
+            #         print(maxVal, name)
 
             elif (name == 'templeLevel' and maxVal > 0.5):
                 kb.press('w')
@@ -208,14 +217,24 @@ def check_for_obstacle(frame, debug=0):
             # obtained through experimental measurments)
             if name == 'gap1' or name == 'gap2':
                 feature_frame = feature_frame[75:175, 150:350]
+
+            elif name == 'fireTrap':
+                feature_frame = feature_frame[20:175, 100:200]
             
             frame_descriptors = get_descriptors(feature_frame)
             matches = get_descriptor_matches(obstacle, frame_descriptors)
 
-            if (name == 'gap1' or name == 'gap2') and matches > 30:
+            if (name == 'gap1' or name == 'gap2') and matches > 20:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
+                if debug:
+                    print(name + ': ' + str(matches))
+
+            elif (name == 'fireTrap' and matches > 20):
+                kb.press('s')
+                sleep(0.025)
+                kb.release('s')
                 if debug:
                     print(name + ': ' + str(matches))
 
