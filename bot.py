@@ -1,14 +1,29 @@
 import cv2
 from time import time, sleep
 import numpy as np
+import pickle
 import matplotlib.pyplot as plt
 from mss.windows import MSS as mss
 from pynput.keyboard import Controller, Listener
 
 RECORDING = 1          # set this flag high if you want the screen recorded
-DEBUG = 0              # set this flag high to enable debugging in the main loop
+DEBUG = 1              # set this flag high to enable debugging in the main loop
 
 dim = {'top': 0, 'left': 0, 'width': 540, 'height': 960}
+
+def unpickle_desc(path):
+    '''
+    Description:
+        Unpickles a pickled ORB description object
+    Input:
+        - path (str): File path to a pickled descriptor
+    Output:
+        - A descriptor object used for feature matching
+    '''
+    file = open(path,'rb')
+    object_file = pickle.load(file)
+    file.close()
+    return object_file
 
 '''
 Temple Obstacle Templates
@@ -21,8 +36,8 @@ TREE_ROOT2 = cv2.imread('./Obstacles/Temple/treeRoot2.png', 0)
 TREE_ROOT3 = cv2.imread('./Obstacles/Temple/treeRoot3.png', 0)
 TREE_ROOT4 = cv2.imread('./Obstacles/Temple/treeRoot4.png', 0)
 TREE_TRUNK = cv2.imread('./Obstacles/Temple/treeSlide.png', 0)
-GAP1 = cv2.imread('./Obstacles/Temple/gap1.png', 0)
-GAP2 = cv2.imread('./Obstacles/Temple/gap2.png', 0)
+GAP1 = unpickle_desc('./Obstacles/Temple/ORB/gap1.pickle')
+GAP2 = unpickle_desc('./Obstacles/Temple/ORB/gap2.pickle')
 FIRE_TRAP = cv2.imread('./Obstacles/Temple/fireTrap.png', 0)
 ROCK_LEVEL = cv2.imread('./Obstacles/Temple/rockLevel.png', 0)
 ROCK_LEVEL2 = cv2.imread('./Obstacles/Temple/rockLevel2.png', 0)
@@ -45,19 +60,25 @@ TIKI = cv2.imread('./Obstacles/Water/tiki.png', 0)
 WATER_GAP = cv2.imread('./Obstacles/Water/waterGap.png', 0)
 TEMPLE_LEVEL = cv2.imread('./Obstacles/Water/templeLevel.png', 0)
 
-TEMPLE_OBSTACLES = [(TREE_ROOT1, 'treeRoot' ), 
-                    (TREE_ROOT2, 'treeRoot'),
-                    (TREE_ROOT3, 'treeRoot'),
-                    (TREE_ROOT4, 'treeRoot'),
-                    (TREE_TRUNK, 'treeTrunk'), 
-                    (GAP1, 'gap'),
-                    (GAP2, 'gap'),
-                    (FIRE_TRAP, 'fireTrap'),
-                    (ALTERNATE_LEVEL, 'alternateLevel')]
+'''
+Each obstacle has a obstacle template for template matching
+or ORB descriptor for feature matching, a name, and a method.
+The name and method are to determine how to parse the frame for
+the given obstacle.
+'''
+TEMPLE_OBSTACLES = [(TREE_ROOT1, 'treeRoot1', 'template'), 
+                    (TREE_ROOT2, 'treeRoot2', 'template'),
+                    (TREE_ROOT3, 'treeRoot3', 'template'),
+                    (TREE_ROOT4, 'treeRoot4', 'template'),
+                    (TREE_TRUNK, 'treeTrunk', 'template'), 
+                    (GAP1, 'gap1', 'feature'),
+                    (GAP2, 'gap2', 'feature'),
+                    (FIRE_TRAP, 'fireTrap', 'template'),
+                    (ALTERNATE_LEVEL, 'alternateLevel', 'template')]
 
-ALTERNATE_OBSTACLES = [(TIKI, 'tiki'),
-                       (WATER_GAP, 'waterGap'),
-                       (TEMPLE_LEVEL, 'templeLevel')]
+ALTERNATE_OBSTACLES = [(TIKI, 'tiki', 'template'),
+                       (WATER_GAP, 'waterGap', 'template'),
+                       (TEMPLE_LEVEL, 'templeLevel', 'template')]
 
 OBSTACLES = TEMPLE_OBSTACLES
 
@@ -73,6 +94,58 @@ def display_template_match(frame, obstacle, maxLoc):
     cv2.rectangle(frame, (startX, startY), (endX, endY), (255, 0, 0), 3)
     cv2.imshow('Template Matching', frame)
 
+def get_descriptors(img):
+    '''
+    Description:
+        Finds the ORB descriptors of an image
+    Input:
+        - img (nd.array): An image
+    Output:
+        - The ORB descriptors of the image
+    '''
+    orb = cv2.ORB_create()
+    _, descriptors = orb.detectAndCompute(img, None)
+    return descriptors
+
+def get_descriptor_matches(des1, des2):
+    '''
+    Description:
+        Finds the matches between two ORB descriptors
+    Input:
+        - des1 (list): List of ORB descriptors for image one
+        - des2 (list): List of ORB descriptors for image two
+    Output:
+        - The number of matches between the descriptors
+    '''
+    # FLANN parameters
+    FLANN_INDEX_LSH = 6
+    index_params= dict(algorithm = FLANN_INDEX_LSH,
+                   table_number = 6, # 12
+                   key_size = 12,     # 20
+                   multi_probe_level = 2) #2
+    search_params = dict(checks=50)   # or pass empty dictionary
+
+    flann = cv2.FlannBasedMatcher(index_params,search_params)
+
+    try:
+        matches = flann.knnMatch(des1,des2,k=2)
+    except:
+        return 0
+
+    # Need to draw only good matches, so create a mask
+    matchesMask = [[0,0] for i in range(len(matches))]
+    
+    # ratio test as per Lowe's paper
+    for i, pair in enumerate(matches):
+        try:
+            m, n = pair
+            if m.distance < 0.7*n.distance:
+                matchesMask[i]=[1,0]
+        except:
+            continue
+    
+    return np.sum(matchesMask)
+
 def check_for_obstacle(frame, debug=0):
     '''
     Loops through the obstacles associated with the current state and makes an action
@@ -82,45 +155,70 @@ def check_for_obstacle(frame, debug=0):
     global TEMPLE_OBSTACLES
     global ALTERNATE_OBSTACLES
 
-    for obstacle, group in OBSTACLES:
-        result = cv2.matchTemplate(frame, obstacle, cv2.TM_CCOEFF_NORMED)
-        minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(result)
+    for obstacle, name, method in OBSTACLES:
+        # algorithm for template matching
+        if method == 'template':
+            result = cv2.matchTemplate(frame, obstacle, cv2.TM_CCOEFF_NORMED)
+            _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
 
-        if ((group == 'treeRoot' or group == 'gap' or group == 'fireTrap') and maxVal > 0.7):
-            kb.press('w')
-            sleep(0.025)
-            kb.release('w')
-            if debug:
-                display_template_match(frame, obstacle, maxLoc)
-                print(maxVal, group)
-                print()
+            if ((name == 'treeRoot1' or name == 'fireTrap' or
+                 name == 'treeRoot2 ' or name == 'treeRoot3' or
+                 name == 'treeRoot4') and maxVal > 0.7):
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                if debug:
+                    display_template_match(frame, obstacle, maxLoc)
+                    print(maxVal, name)
+                    print()
 
-        elif (group == 'treeTrunk' and maxVal > 0.55):
-            kb.press('s')
-            sleep(0.025)
-            kb.release('s')
-            if debug:
-                display_template_match(frame, obstacle, maxLoc)
-                print(maxVal, group)
-                print()
+            elif (name == 'treeTrunk' and maxVal > 0.55):
+                kb.press('s')
+                sleep(0.025)
+                kb.release('s')
+                if debug:
+                    display_template_match(frame, obstacle, maxLoc)
+                    print(maxVal, name)
+                    print()
 
-        elif (group == 'alternateLevel' and maxVal > 0.5):
-            kb.press('w')
-            sleep(0.025)
-            kb.release('w')
-            OBSTACLES = ALTERNATE_OBSTACLES
-            if debug:
-                display_template_match(frame, obstacle, maxLoc)
-                print(maxVal, group)
+            elif (name == 'alternateLevel' and maxVal > 0.5):
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                OBSTACLES = ALTERNATE_OBSTACLES
+                if debug:
+                    display_template_match(frame, obstacle, maxLoc)
+                    print(maxVal, name)
 
-        elif (group == 'templeLevel' and maxVal > 0.5):
-            kb.press('w')
-            sleep(0.025)
-            kb.release('w')
-            OBSTACLES = TEMPLE_OBSTACLES
-            if debug:
-                display_template_match(frame, obstacle, maxLoc)
-                print(maxVal, group)
+            elif (name == 'templeLevel' and maxVal > 0.5):
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                OBSTACLES = TEMPLE_OBSTACLES
+                if debug:
+                    display_template_match(frame, obstacle, maxLoc)
+                    print(maxVal, name)
+
+        # algorithm for feature matching
+        if method == 'feature':
+
+            feature_frame = np.copy(frame)
+
+            # crop frame based on current obstacle (crop dimensions 
+            # obtained through experimental measurments)
+            if name == 'gap1' or name == 'gap2':
+                feature_frame = feature_frame[75:175, 150:350]
+            
+            frame_descriptors = get_descriptors(feature_frame)
+            matches = get_descriptor_matches(obstacle, frame_descriptors)
+
+            if (name == 'gap1' or name == 'gap2') and matches > 30:
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                if debug:
+                    print(name + ': ' + str(matches))
+
 
 
 def check_for_turn(frame):
