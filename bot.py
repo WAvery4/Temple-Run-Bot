@@ -43,6 +43,16 @@ ROCK_LEVEL = cv2.imread('./Obstacles/Temple/rockLevel.png', 0)
 ROCK_LEVEL2 = cv2.imread('./Obstacles/Temple/rockLevel2.png', 0)
 ALTERNATE_LEVEL = cv2.imread('./Obstacles/Temple/waterLevel.png', 0)
 
+TREE_ROOT1_NAME = 'treeRoot1'
+TREE_ROOT2_NAME = 'treeRoot2'
+TREE_ROOT3_NAME = 'treeRoot3'
+TREE_ROOT4_NAME = 'treeRoot4'
+TREE_TRUNK_NAME = 'treeTrunk'
+GAP1_NAME = 'gap1'
+GAP2_NAME = 'gap2'
+FIRE_TRAP_NAME = 'fireTrap'
+ALTERNATE_LEVEL_NAME = 'alternateLevel'
+
 '''
 Rock Obstacle Templates
 
@@ -60,21 +70,23 @@ TIKI = cv2.imread('./Obstacles/Water/tiki.png', 0)
 WATER_GAP = cv2.imread('./Obstacles/Water/waterGap.png', 0)
 TEMPLE_LEVEL = cv2.imread('./Obstacles/Water/templeLevel.png', 0)
 
+TEMPLATE = True
+FEATURE = False
 '''
 Each obstacle has a obstacle template for template matching
 or ORB descriptor for feature matching, a name, and a method.
 The name and method are to determine how to parse the frame for
 the given obstacle.
 '''
-TEMPLE_OBSTACLES = [(TREE_ROOT1, 'treeRoot1', 'template'), 
-                    (TREE_ROOT2, 'treeRoot2', 'template'),
-                    (TREE_ROOT3, 'treeRoot3', 'template'),
-                    (TREE_ROOT4, 'treeRoot4', 'template'),
-                    (TREE_TRUNK, 'treeTrunk', 'template'), 
-                    (GAP1, 'gap1', 'feature'),
-                    (GAP2, 'gap2', 'feature'),
-                    (FIRE_TRAP, 'fireTrap', 'feature'),
-                    (ALTERNATE_LEVEL, 'alternateLevel', 'template')]
+TEMPLE_OBSTACLES = [(TREE_ROOT1, TREE_ROOT1_NAME, TEMPLATE), 
+                    (TREE_ROOT2, TREE_ROOT2_NAME, TEMPLATE),
+                    (TREE_ROOT3, TREE_ROOT3_NAME, TEMPLATE),
+                    (TREE_ROOT4, TREE_ROOT4_NAME, TEMPLATE),
+                    (TREE_TRUNK, TREE_TRUNK_NAME, TEMPLATE), 
+                    (GAP1, GAP1_NAME, FEATURE),
+                    (GAP2, GAP2_NAME, FEATURE),
+                    (FIRE_TRAP, FIRE_TRAP_NAME, FEATURE),
+                    (ALTERNATE_LEVEL, ALTERNATE_LEVEL_NAME, TEMPLATE)]
 
 ALTERNATE_OBSTACLES = [(TIKI, 'tiki', 'template'),
                        (WATER_GAP, 'waterGap', 'template'),
@@ -157,13 +169,11 @@ def check_for_obstacle(frame, debug=0):
 
     for obstacle, name, method in OBSTACLES:
         # algorithm for template matching
-        if method == 'template':
+        if method == TEMPLATE:
             result = cv2.matchTemplate(frame, obstacle, cv2.TM_CCOEFF_NORMED)
             _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
 
-            if ((name == 'fireTrap' or
-                 name == 'treeRoot1' or name == 'treeRoot3' or
-                 name == 'treeRoot4') and maxVal > 0.7):
+            if ((name == FIRE_TRAP_NAME or name == TREE_ROOT1_NAME or name == TREE_ROOT3_NAME or name == TREE_ROOT4_NAME) and maxVal > 0.7):
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -173,7 +183,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif (name == 'treeRoot2' and maxVal > 0.65):
+            elif (name == TREE_ROOT2_NAME and maxVal > 0.65):
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -183,7 +193,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif (name == 'treeTrunk' and maxVal > 0.55):
+            elif (name == TREE_TRUNK_NAME and maxVal > 0.55):
                 kb.press('s')
                 sleep(0.025)
                 kb.release('s')
@@ -213,22 +223,22 @@ def check_for_obstacle(frame, debug=0):
                 return
 
         # algorithm for feature matching
-        if method == 'feature':
+        if method == FEATURE:
 
             feature_frame = np.copy(frame)
 
             # crop frame based on current obstacle (crop dimensions 
             # obtained through experimental measurments)
-            if name == 'gap1' or name == 'gap2':
+            if name == GAP1_NAME or name == GAP2_NAME:
                 feature_frame = feature_frame[75:175, 150:350]
 
-            elif name == 'fireTrap':
+            elif name == FIRE_TRAP_NAME:
                 feature_frame = feature_frame[20:175, 100:200]
             
             frame_descriptors = get_descriptors(feature_frame)
             matches = get_descriptor_matches(obstacle, frame_descriptors)
 
-            if (name == 'gap1' or name == 'gap2') and matches > 20:
+            if (name == GAP1_NAME or name == GAP2_NAME) and matches > 20:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -236,7 +246,7 @@ def check_for_obstacle(frame, debug=0):
                     print(name + ': ' + str(matches))
                 return
 
-            elif (name == 'fireTrap' and matches > 20):
+            elif (name == FIRE_TRAP_NAME and matches > 20):
                 kb.press('s')
                 sleep(0.025)
                 kb.release('s')
