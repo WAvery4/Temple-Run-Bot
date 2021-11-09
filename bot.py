@@ -49,6 +49,7 @@ Rock Obstacle Templates
 *** TO-DO ***
 * Get images of the remaining obstacles
 '''
+STONE_GAP = cv2.imread('./Obstacles/Water/stoneGap.png', 0)
 
 '''
 Water Obstacle Templates
@@ -56,7 +57,7 @@ Water Obstacle Templates
 *** TO-DO ***
 * Get images of the remaining obstacles
 '''
-TIKI = cv2.imread('./Obstacles/Water/tiki.png', 0)
+TIKI = cv2.imread('./Obstacles/Water/stoneGate.png', 0)
 WATER_GAP = cv2.imread('./Obstacles/Water/waterGap.png', 0)
 TEMPLE_LEVEL = cv2.imread('./Obstacles/Water/templeLevel.png', 0)
 
@@ -193,14 +194,25 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            # elif (name == 'alternateLevel' and maxVal > 0.5):
-            #     kb.press('w')
-            #     sleep(0.025)
-            #     kb.release('w')
-            #     OBSTACLES = ALTERNATE_OBSTACLES
-            #     if debug:
-            #         display_template_match(frame, obstacle, maxLoc)
-            #         print(maxVal, name)
+            elif (name == 'tiki' and maxVal > 0.35):
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                if debug:
+                    display_template_match(frame, obstacle, maxLoc)
+                    print(maxVal, name)
+                    print()
+                return
+
+            elif (name == 'alternateLevel' and maxVal > 0.45):
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                OBSTACLES = ALTERNATE_OBSTACLES
+                if debug:
+                    display_template_match(frame, obstacle, maxLoc)
+                    print(maxVal, name)
+                return
 
             elif (name == 'templeLevel' and maxVal > 0.5):
                 kb.press('w')
