@@ -35,7 +35,7 @@ TREE_ROOT1 = cv2.imread('./Obstacles/Temple/treeRoot1.png', 0)
 TREE_ROOT2 = cv2.imread('./Obstacles/Temple/treeRoot2.png', 0)
 TREE_ROOT3 = cv2.imread('./Obstacles/Temple/treeRoot3.png', 0)
 TREE_ROOT4 = cv2.imread('./Obstacles/Temple/treeRoot4.png', 0)
-TREE_TRUNK = cv2.imread('./Obstacles/Temple/treeSlide.png', 0)
+TREE_TRUNK = cv2.imread('./Obstacles/Temple/treeSlide1.png', 0)
 GAP1 = unpickle_desc('./Obstacles/Temple/ORB/gap1.pickle')
 GAP2 = unpickle_desc('./Obstacles/Temple/ORB/gap2.pickle')
 FIRE_TRAP = unpickle_desc('./Obstacles/Temple/ORB/fireTrap.pickle')
@@ -59,7 +59,10 @@ Rock Obstacle Templates
 *** TO-DO ***
 * Get images of the remaining obstacles
 '''
+STONE_TREE_TRUNK = cv2.imread('./Obstacles/Water/stoneTrunk.png', 0)
 STONE_GAP = cv2.imread('./Obstacles/Water/stoneGap.png', 0)
+
+STONE_TRUNK_NAME = 'treeTrunk'
 
 '''
 Water Obstacle Templates
@@ -70,6 +73,9 @@ Water Obstacle Templates
 TIKI = cv2.imread('./Obstacles/Water/stoneGate.png', 0)
 WATER_GAP = cv2.imread('./Obstacles/Water/waterGap.png', 0)
 TEMPLE_LEVEL = cv2.imread('./Obstacles/Water/templeLevel.png', 0)
+
+TIKI_NAME = 'tiki'
+TEMPLE_LEVEL_NAME = 'templeLevel'
 
 TEMPLATE = True
 FEATURE = False
@@ -89,9 +95,10 @@ TEMPLE_OBSTACLES = [(TREE_ROOT1, TREE_ROOT1_NAME, TEMPLATE),
                     (FIRE_TRAP, FIRE_TRAP_NAME, FEATURE),
                     (ALTERNATE_LEVEL, ALTERNATE_LEVEL_NAME, TEMPLATE)]
 
-ALTERNATE_OBSTACLES = [(TIKI, 'tiki', 'template'),
+ALTERNATE_OBSTACLES = [(TIKI, TIKI_NAME, TEMPLATE),
                        (WATER_GAP, 'waterGap', 'template'),
-                       (TEMPLE_LEVEL, 'templeLevel', 'template')]
+                       (STONE_TREE_TRUNK, STONE_TRUNK_NAME, TEMPLATE),
+                       (TEMPLE_LEVEL, TEMPLE_LEVEL_NAME, TEMPLATE)]
 
 OBSTACLES = TEMPLE_OBSTACLES
 
@@ -174,7 +181,7 @@ def check_for_obstacle(frame, debug=0):
             result = cv2.matchTemplate(frame, obstacle, cv2.TM_CCOEFF_NORMED)
             _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
 
-            if ((name == FIRE_TRAP_NAME or name == TREE_ROOT1_NAME or name == TREE_ROOT3_NAME or name == TREE_ROOT4_NAME) and maxVal > 0.7):
+            if (name == FIRE_TRAP_NAME or name == TREE_ROOT1_NAME or name == TREE_ROOT4_NAME) and maxVal > 0.7:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -184,7 +191,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif (name == TREE_ROOT2_NAME and maxVal > 0.65):
+            elif name == TREE_ROOT3_NAME and maxVal > 0.75:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -194,7 +201,18 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif (name == TREE_TRUNK_NAME and maxVal > 0.55):
+            elif name == TREE_ROOT2_NAME and maxVal > 0.60:
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                if debug:
+                    display_template_match(frame, obstacle, maxLoc)
+                    print(maxVal, name)
+                    print()
+                return
+
+            # stone trunk not fully working yet
+            elif (name == TREE_TRUNK_NAME or name == STONE_TRUNK_NAME) and maxVal > 0.40:
                 kb.press('s')
                 sleep(0.025)
                 kb.release('s')
@@ -204,7 +222,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif (name == 'tiki' and maxVal > 0.35):
+            elif name == TIKI_NAME and maxVal > 0.4:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -214,7 +232,8 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif (name == 'alternateLevel' and maxVal > 0.45):
+            # alternate level jump not always working for stone
+            elif name == ALTERNATE_LEVEL_NAME and maxVal > 0.45:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -224,7 +243,8 @@ def check_for_obstacle(frame, debug=0):
                     print(maxVal, name)
                 return
 
-            elif (name == 'templeLevel' and maxVal > 0.5):
+            # works *most* of the time, might want to use ORB for this
+            elif name == TEMPLE_LEVEL_NAME and maxVal > 0.5:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -258,19 +278,18 @@ def check_for_obstacle(frame, debug=0):
                     print(name + ': ' + str(matches))
                 return
 
-            elif (name == FIRE_TRAP_NAME and matches > 20):
-                kb.press('s')
+            elif name == FIRE_TRAP_NAME and matches > 20:
+                kb.press('w')
                 sleep(0.025)
-                kb.release('s')
+                kb.release('w')
                 if debug:
                     print(name + ': ' + str(matches))
                 return
 
-        check_for_turn(frame)
+        check_for_turn(frame, OBSTACLES == TEMPLE_OBSTACLES)
 
 
-
-def check_for_turn(frame):
+def check_for_turn(frame, temple):
     '''
     Averages the pixels of three patches located on the screen and performs
     a turn based on the results.
@@ -281,15 +300,27 @@ def check_for_turn(frame):
     patch0_average = np.average(patch0)
     patch1_average = np.average(patch1)
     patch2_average = np.average(patch2)
-    if patch1_average < 80:
-        if patch0_average > 80:
+    if temple:
+        if patch1_average < 80:
+            if patch0_average > 80:
+                kb.press('a')
+                sleep(0.025)
+                kb.release('a')
+            elif patch2_average > 80:
+                kb.press('d')
+                sleep(0.025)
+                kb.release('d')
+    else:
+        # still needs tweaking, might need to separate stone and water for this part
+        if patch0_average > 50:
             kb.press('a')
             sleep(0.025)
             kb.release('a')
-        elif patch2_average > 80:
+        elif patch2_average > 50:
             kb.press('d')
             sleep(0.025)
-            kb.release('d') 
+            kb.release('d')
+
 
 def main():
     if RECORDING:
@@ -321,6 +352,7 @@ def main():
                 if RECORDING:
                     output.release()
                 break
+
 
 if __name__ == "__main__":
     main()
