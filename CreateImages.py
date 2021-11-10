@@ -36,10 +36,6 @@ count_jumpleanright = 0
 count_jumpleanleft = 0
 count_slideleanright = 0
 count_slideleanleft = 0
-count_rightleanright = 0
-count_rightleanleft = 0
-count_leftleanright = 0
-count_leftleanleft = 0
 
 for data in holder_list:
     #print(data[1])
@@ -76,16 +72,3 @@ for data in holder_list:
     elif data[1] == 'SL':
         count_slideleanright += 1
         cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/SlideLeanRight/H7-r{count_slideleanright}.png", data[0])
-    elif data[1] == 'AJ':
-        count_leftleanleft += 1
-        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/LeftLeanLeft/H7-l{count_leftleanleft}.png", data[0]) 
-    elif data[1] == 'AL':
-        count_leftleanright += 1
-        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/LeftLeanRight/H7-r{count_leftleanright}.png", data[0])
-    elif data[1] == 'DJ':
-        count_rightleanleft += 1
-        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/RightLeanLeft/H7-l{count_rightleanleft}.png", data[0]) 
-    elif data[1] == 'DL':
-        count_rightleanright += 1
-        cv2.imwrite(f"D:/371Q_Project/TempleRun/Data/RightLeanRight/H7-r{count_rightleanright}.png", data[0])
-    

@@ -23,18 +23,10 @@ def key_check():
         return 'SJ'
     elif 'S' in keys and 'L' in keys:
         return 'SL'
-    elif 'A' in keys and 'J' in keys:
-        return 'AJ'
-    elif 'A' in keys and 'L' in keys:
-        return 'AL'
     elif 'W' in keys and 'J' in keys:
         return 'WJ'
     elif 'W' in keys and 'L' in keys:
         return 'WL'
-    elif 'D' in keys and 'J' in keys:
-        return 'DJ'
-    elif 'D' in keys and 'L' in keys:
-        return 'DL'
     elif 'B' in keys:
         return 'B'
     elif 'A' in keys:
