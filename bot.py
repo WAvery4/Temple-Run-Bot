@@ -59,10 +59,12 @@ Rock Obstacle Templates
 *** TO-DO ***
 * Get images of the remaining obstacles
 '''
-STONE_TREE_TRUNK = cv2.imread('./Obstacles/Water/stoneTrunk.png', 0)
+STONE_TREE_TRUNK = cv2.imread('./Obstacles/Water/stoneTreeSlide2.png', 0)
+STONE_TREE_TRUNK1 = cv2.imread('./Obstacles/Water/stoneTreeSlide3.png', 0)
 STONE_GAP = cv2.imread('./Obstacles/Water/stoneGap.png', 0)
 
-STONE_TRUNK_NAME = 'treeTrunk'
+STONE_TRUNK_NAME = 'treeTrunkStone'
+STONE_TRUNK1_NAME = 'treeTrunkStone2'
 
 '''
 Water Obstacle Templates
@@ -98,6 +100,7 @@ TEMPLE_OBSTACLES = [(TREE_ROOT1, TREE_ROOT1_NAME, TEMPLATE),
 ALTERNATE_OBSTACLES = [(TIKI, TIKI_NAME, TEMPLATE),
                        (WATER_GAP, 'waterGap', 'template'),
                        (STONE_TREE_TRUNK, STONE_TRUNK_NAME, TEMPLATE),
+                       (STONE_TREE_TRUNK1, STONE_TRUNK1_NAME, TEMPLATE),
                        (TEMPLE_LEVEL, TEMPLE_LEVEL_NAME, TEMPLATE)]
 
 OBSTACLES = TEMPLE_OBSTACLES
@@ -201,7 +204,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif name == TREE_ROOT2_NAME and maxVal > 0.60:
+            elif name == TREE_ROOT2_NAME and maxVal > 0.65:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -211,8 +214,18 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
+            elif name == TREE_TRUNK_NAME and maxVal > 0.50:
+                kb.press('s')
+                sleep(0.025)
+                kb.release('s')
+                if debug:
+                    display_template_match(frame, obstacle, maxLoc)
+                    print(maxVal, name)
+                    print()
+                return
+
             # stone trunk not fully working yet
-            elif (name == TREE_TRUNK_NAME or name == STONE_TRUNK_NAME) and maxVal > 0.40:
+            elif (name == STONE_TRUNK_NAME or name == STONE_TRUNK1_NAME) and maxVal > 0.4:
                 kb.press('s')
                 sleep(0.025)
                 kb.release('s')
@@ -294,13 +307,13 @@ def check_for_turn(frame, temple):
     Averages the pixels of three patches located on the screen and performs
     a turn based on the results.
     '''
-    patch0 = frame[100:150, 50:100]
-    patch1 = frame[50:100, 250:300]
-    patch2 = frame[100:150, 440:490]
-    patch0_average = np.average(patch0)
-    patch1_average = np.average(patch1)
-    patch2_average = np.average(patch2)
     if temple:
+        patch0 = frame[100:150, 50:100]
+        patch1 = frame[50:100, 250:300]
+        patch2 = frame[100:150, 440:490]
+        patch0_average = np.average(patch0)
+        patch1_average = np.average(patch1)
+        patch2_average = np.average(patch2)
         if patch1_average < 80:
             if patch0_average > 80:
                 kb.press('a')
@@ -311,7 +324,13 @@ def check_for_turn(frame, temple):
                 sleep(0.025)
                 kb.release('d')
     else:
-        # still needs tweaking, might need to separate stone and water for this part
+        th, binary = cv2.threshold(frame, 75, 255, cv2.THRESH_BINARY)
+        patch0 = binary[100:150, 50:100]
+        patch1 = binary[50:100, 250:300]
+        patch2 = binary[100:150, 440:490]
+        patch0_average = np.average(patch0)
+        patch1_average = np.average(patch1)
+        patch2_average = np.average(patch2)
         if patch0_average > 50:
             kb.press('a')
             sleep(0.025)
