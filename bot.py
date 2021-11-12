@@ -207,7 +207,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif name == TREE_ROOT2_NAME and maxVal > 0.75:
+            elif name == TREE_ROOT2_NAME and maxVal > 0.7:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -299,7 +299,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif (name == TEMPLE_LEVEL_WATER_NAME or name == TEMPLE_LEVEL_STONE_NAME) and matches > 15:
+            elif (name == TEMPLE_LEVEL_WATER_NAME or name == TEMPLE_LEVEL_STONE_NAME) and matches > 20:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -309,7 +309,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-        # check_for_turn(frame, OBSTACLES == TEMPLE_OBSTACLES)
+        check_for_turn(frame, OBSTACLES == TEMPLE_OBSTACLES)
 
 
 def check_for_turn(frame, temple):
