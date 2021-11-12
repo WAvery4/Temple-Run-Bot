@@ -62,9 +62,11 @@ Rock Obstacle Templates
 STONE_TREE_TRUNK = cv2.imread('./Obstacles/Water/stoneTreeSlide2.png', 0)
 STONE_TREE_TRUNK1 = cv2.imread('./Obstacles/Water/stoneTreeSlide3.png', 0)
 STONE_GAP = cv2.imread('./Obstacles/Water/stoneGap.png', 0)
+TEMPLE_LEVEL_STONE = unpickle_desc('./Obstacles/Temple/ORB/templeLevelStone.pickle')
 
 STONE_TRUNK_NAME = 'treeTrunkStone'
 STONE_TRUNK1_NAME = 'treeTrunkStone2'
+TEMPLE_LEVEL_STONE_NAME = 'templeLevelStone'
 
 '''
 Water Obstacle Templates
@@ -74,10 +76,10 @@ Water Obstacle Templates
 '''
 TIKI = cv2.imread('./Obstacles/Water/stoneGate.png', 0)
 WATER_GAP = cv2.imread('./Obstacles/Water/waterGap.png', 0)
-TEMPLE_LEVEL = cv2.imread('./Obstacles/Water/templeLevel.png', 0)
+TEMPLE_LEVEL_WATER = unpickle_desc('./Obstacles/Temple/ORB/templeLevelWater.pickle')
 
 TIKI_NAME = 'tiki'
-TEMPLE_LEVEL_NAME = 'templeLevel'
+TEMPLE_LEVEL_WATER_NAME = 'templeLevelWater'
 
 TEMPLATE = True
 FEATURE = False
@@ -101,7 +103,8 @@ ALTERNATE_OBSTACLES = [(TIKI, TIKI_NAME, TEMPLATE),
                        (WATER_GAP, 'waterGap', 'template'),
                        (STONE_TREE_TRUNK, STONE_TRUNK_NAME, TEMPLATE),
                        (STONE_TREE_TRUNK1, STONE_TRUNK1_NAME, TEMPLATE),
-                       (TEMPLE_LEVEL, TEMPLE_LEVEL_NAME, TEMPLATE)]
+                       (TEMPLE_LEVEL_WATER, TEMPLE_LEVEL_WATER_NAME, FEATURE),
+                       (TEMPLE_LEVEL_STONE, TEMPLE_LEVEL_STONE_NAME, FEATURE)]
 
 OBSTACLES = TEMPLE_OBSTACLES
 
@@ -204,7 +207,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif name == TREE_ROOT2_NAME and maxVal > 0.65:
+            elif name == TREE_ROOT2_NAME and maxVal > 0.75:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -256,17 +259,6 @@ def check_for_obstacle(frame, debug=0):
                     print(maxVal, name)
                 return
 
-            # works *most* of the time, might want to use ORB for this
-            elif name == TEMPLE_LEVEL_NAME and maxVal > 0.5:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
-                OBSTACLES = TEMPLE_OBSTACLES
-                if debug:
-                    display_template_match(frame, obstacle, maxLoc)
-                    print(maxVal, name)
-                return
-
         # algorithm for feature matching
         if method == FEATURE:
 
@@ -279,6 +271,12 @@ def check_for_obstacle(frame, debug=0):
 
             elif name == FIRE_TRAP_NAME:
                 feature_frame = feature_frame[20:175, 100:200]
+
+            elif name == TEMPLE_LEVEL_WATER_NAME:
+                feature_frame = feature_frame[0:100, 150:400]
+
+            elif name == TEMPLE_LEVEL_STONE_NAME:
+                feature_frame = feature_frame[100:200, 150:400]
             
             frame_descriptors = get_descriptors(feature_frame)
             matches = get_descriptor_matches(obstacle, frame_descriptors)
@@ -289,6 +287,7 @@ def check_for_obstacle(frame, debug=0):
                 kb.release('w')
                 if debug:
                     print(name + ': ' + str(matches))
+                    print()
                 return
 
             elif name == FIRE_TRAP_NAME and matches > 20:
@@ -297,9 +296,20 @@ def check_for_obstacle(frame, debug=0):
                 kb.release('w')
                 if debug:
                     print(name + ': ' + str(matches))
+                    print()
                 return
 
-        check_for_turn(frame, OBSTACLES == TEMPLE_OBSTACLES)
+            elif (name == TEMPLE_LEVEL_WATER_NAME or name == TEMPLE_LEVEL_STONE_NAME) and matches > 15:
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                OBSTACLES = TEMPLE_OBSTACLES
+                if debug:
+                    print(name + ': ' + str(matches))
+                    print()
+                return
+
+        # check_for_turn(frame, OBSTACLES == TEMPLE_OBSTACLES)
 
 
 def check_for_turn(frame, temple):
