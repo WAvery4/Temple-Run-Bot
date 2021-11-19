@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from mss.windows import MSS as mss
 from pynput.keyboard import Controller, Listener
 
-RECORDING = 1          # set this flag high if you want the screen recorded
+RECORDING = 0          # set this flag high if you want the screen recorded
 DEBUG = 0              # set this flag high to enable debugging in the main loop
 
 dim = {'top': 0, 'left': 0, 'width': 540, 'height': 960}
@@ -31,7 +31,7 @@ Temple Obstacle Templates
 *** TO-DO ***
 * Get images of the remaining obstacles
 '''
-TREE_ROOT1 = cv2.imread('./Obstacles/Temple/treeRoot1.png', 0)
+TREE_ROOT1 = cv2.imread('./Obstacles/Temple/treeRoot1_2.png', 0)
 TREE_ROOT2 = cv2.imread('./Obstacles/Temple/treeRoot2.png', 0)
 TREE_ROOT3 = cv2.imread('./Obstacles/Temple/treeRoot3.png', 0)
 TREE_ROOT4 = cv2.imread('./Obstacles/Temple/treeRoot4.png', 0)
@@ -74,7 +74,7 @@ Water Obstacle Templates
 *** TO-DO ***
 * Get images of the remaining obstacles
 '''
-TIKI = cv2.imread('./Obstacles/Water/stoneGate.png', 0)
+TIKI = cv2.imread('./Obstacles/Water/stoneGate2.png', 0)
 WATER_GAP = cv2.imread('./Obstacles/Water/waterGap.png', 0)
 TEMPLE_LEVEL_WATER = unpickle_desc('./Obstacles/Temple/ORB/templeLevelWater.pickle')
 
@@ -187,7 +187,7 @@ def check_for_obstacle(frame, debug=0):
             result = cv2.matchTemplate(frame, obstacle, cv2.TM_CCOEFF_NORMED)
             _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
 
-            if (name == FIRE_TRAP_NAME or name == TREE_ROOT1_NAME or name == TREE_ROOT4_NAME) and maxVal > 0.7:
+            if (name == TREE_ROOT1_NAME or name == TREE_ROOT4_NAME) and maxVal > 0.7:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -207,7 +207,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif name == TREE_ROOT2_NAME and maxVal > 0.7:
+            elif name == TREE_ROOT2_NAME and maxVal > 0.6:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -238,7 +238,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif name == TIKI_NAME and maxVal > 0.4:
+            elif name == TIKI_NAME and maxVal > 0.40:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -329,10 +329,12 @@ def check_for_turn(frame, temple):
                 kb.press('a')
                 sleep(0.025)
                 kb.release('a')
+                print("turn left")
             elif patch2_average > 80:
                 kb.press('d')
                 sleep(0.025)
                 kb.release('d')
+                print("turn right")
     else:
         th, binary = cv2.threshold(frame, 75, 255, cv2.THRESH_BINARY)
         patch0 = binary[100:150, 50:100]
@@ -345,10 +347,12 @@ def check_for_turn(frame, temple):
             kb.press('a')
             sleep(0.025)
             kb.release('a')
+            print("turn left")
         elif patch2_average > 50:
             kb.press('d')
             sleep(0.025)
             kb.release('d')
+            print("turn right")
 
 
 def main():
