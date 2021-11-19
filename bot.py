@@ -32,7 +32,7 @@ Temple Obstacle Templates
 * Get images of the remaining obstacles
 '''
 TREE_ROOT1 = cv2.imread('./Obstacles/Temple/treeRoot1_2.png', 0)
-TREE_ROOT2 = cv2.imread('./Obstacles/Temple/treeRoot2.png', 0)
+TREE_ROOT2 = cv2.imread('./Obstacles/Temple/treeRoot2_1.png', 0)
 TREE_ROOT3 = cv2.imread('./Obstacles/Temple/treeRoot3.png', 0)
 TREE_ROOT4 = cv2.imread('./Obstacles/Temple/treeRoot4.png', 0)
 TREE_TRUNK = cv2.imread('./Obstacles/Temple/treeSlide1.png', 0)
@@ -93,7 +93,7 @@ TEMPLE_OBSTACLES = [(TREE_ROOT1, TREE_ROOT1_NAME, TEMPLATE),
                     (TREE_ROOT2, TREE_ROOT2_NAME, TEMPLATE),
                     (TREE_ROOT3, TREE_ROOT3_NAME, TEMPLATE),
                     (TREE_ROOT4, TREE_ROOT4_NAME, TEMPLATE),
-                    (TREE_TRUNK, TREE_TRUNK_NAME, TEMPLATE), 
+                    # (TREE_TRUNK, TREE_TRUNK_NAME, TEMPLATE),
                     (GAP1, GAP1_NAME, FEATURE),
                     (GAP2, GAP2_NAME, FEATURE),
                     (FIRE_TRAP, FIRE_TRAP_NAME, FEATURE),
@@ -207,20 +207,11 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif name == TREE_ROOT2_NAME and maxVal > 0.6:
+            elif name == TREE_ROOT2_NAME and maxVal > 0.7:
+                sleep(0.005)  # sleep briefly since it detects this obstacle further back
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
-                if debug:
-                    display_template_match(frame, obstacle, maxLoc)
-                    print(maxVal, name)
-                    print()
-                return
-
-            elif name == TREE_TRUNK_NAME and maxVal > 0.50:
-                kb.press('s')
-                sleep(0.025)
-                kb.release('s')
                 if debug:
                     display_template_match(frame, obstacle, maxLoc)
                     print(maxVal, name)
@@ -309,6 +300,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
+        check_for_tree_trunk(frame, OBSTACLES == TEMPLE_OBSTACLES)
         check_for_turn(frame, OBSTACLES == TEMPLE_OBSTACLES)
 
 
@@ -337,22 +329,40 @@ def check_for_turn(frame, temple):
                 print("turn right")
     else:
         th, binary = cv2.threshold(frame, 75, 255, cv2.THRESH_BINARY)
-        patch0 = binary[100:150, 50:100]
-        patch1 = binary[50:100, 250:300]
-        patch2 = binary[100:150, 440:490]
+        # patch0 = binary[100:150, 50:100]
+        # patch1 = binary[50:100, 250:300]
+        # patch2 = binary[100:150, 440:490]
+        patch0 = binary[150:200, 50:100]
+        patch1 = binary[100:150, 250:300]
+        patch2 = binary[150:200, 440:490]
         patch0_average = np.average(patch0)
         patch1_average = np.average(patch1)
         patch2_average = np.average(patch2)
-        if patch0_average > 50:
+        if patch0_average > 55:
             kb.press('a')
             sleep(0.025)
             kb.release('a')
-            print("turn left")
-        elif patch2_average > 50:
+            print("turn left", patch0_average, patch1_average, patch2_average)
+        elif patch2_average > 55:
             kb.press('d')
             sleep(0.025)
             kb.release('d')
-            print("turn right")
+            print("turn right", patch0_average, patch1_average, patch2_average)
+
+
+def check_for_tree_trunk(frame, temple):
+    if temple:
+        patch0 = frame[100:150, 100:150]
+        patch1 = frame[0:50, 250:300]
+        patch2 = frame[100:150, 400:450]
+        patch0_average = np.mean(patch0)
+        patch1_average = np.mean(patch1)
+        patch2_average = np.mean(patch2)
+        if patch0_average < 45 and patch1_average < 45 and patch2_average < 45:
+            kb.press('s')
+            sleep(0.025)
+            kb.release('s')
+            print("tree trunk", patch0_average, patch1_average, patch2_average)
 
 
 def main():
