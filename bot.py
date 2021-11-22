@@ -14,7 +14,7 @@ dim = {'top': 0, 'left': 0, 'width': 540, 'height': 960}
 def unpickle_desc(path):
     '''
     Description:
-        Unpickles a pickled ORB description object
+        Unpickles a pickled SIFT description object
     Input:
         - path (str): File path to a pickled descriptor
     Output:
@@ -41,7 +41,7 @@ GAP2 = unpickle_desc('./Obstacles/Temple/ORB/gap2.pickle')
 FIRE_TRAP = unpickle_desc('./Obstacles/Temple/ORB/fireTrap.pickle')
 ROCK_LEVEL = cv2.imread('./Obstacles/Temple/rockLevel.png', 0)
 ROCK_LEVEL2 = cv2.imread('./Obstacles/Temple/rockLevel2.png', 0)
-ALTERNATE_LEVEL = cv2.imread('./Obstacles/Temple/waterLevel.png', 0)
+ALTERNATE_LEVEL = unpickle_desc('./Obstacles/Temple/ORB/alternateLevel.pickle')
 
 TREE_ROOT1_NAME = 'treeRoot1'
 TREE_ROOT2_NAME = 'treeRoot2'
@@ -61,11 +61,14 @@ Rock Obstacle Templates
 '''
 STONE_TREE_TRUNK = cv2.imread('./Obstacles/Water/stoneTreeSlide2.png', 0)
 STONE_TREE_TRUNK1 = cv2.imread('./Obstacles/Water/stoneTreeSlide3.png', 0)
-STONE_GAP = cv2.imread('./Obstacles/Water/stoneGap.png', 0)
+STONE_GAP1 = unpickle_desc('./Obstacles/Temple/ORB/stoneGap1.pickle')
+STONE_GAP2 = unpickle_desc('./Obstacles/Temple/ORB/stoneGap2.pickle')
 TEMPLE_LEVEL_STONE = unpickle_desc('./Obstacles/Temple/ORB/templeLevelStone.pickle')
 
 STONE_TRUNK_NAME = 'treeTrunkStone'
 STONE_TRUNK1_NAME = 'treeTrunkStone2'
+STONE_GAP1_NAME = 'stoneGap1'
+STONE_GAP2_NAME = 'stoneGap2'
 TEMPLE_LEVEL_STONE_NAME = 'templeLevelStone'
 
 '''
@@ -75,10 +78,13 @@ Water Obstacle Templates
 * Get images of the remaining obstacles
 '''
 TIKI = cv2.imread('./Obstacles/Water/stoneGate2.png', 0)
-WATER_GAP = cv2.imread('./Obstacles/Water/waterGap.png', 0)
+WATER_GAP1 = unpickle_desc('./Obstacles/Temple/ORB/waterGap1.pickle')
+WATER_GAP2 = unpickle_desc('./Obstacles/Temple/ORB/waterGap2.pickle')
 TEMPLE_LEVEL_WATER = unpickle_desc('./Obstacles/Temple/ORB/templeLevelWater.pickle')
 
 TIKI_NAME = 'tiki'
+WATER_GAP1_NAME = 'waterGap1'
+WATER_GAP2_NAME = 'waterGap2'
 TEMPLE_LEVEL_WATER_NAME = 'templeLevelWater'
 
 TEMPLATE = True
@@ -97,10 +103,13 @@ TEMPLE_OBSTACLES = [(TREE_ROOT1, TREE_ROOT1_NAME, TEMPLATE),
                     (GAP1, GAP1_NAME, FEATURE),
                     (GAP2, GAP2_NAME, FEATURE),
                     (FIRE_TRAP, FIRE_TRAP_NAME, FEATURE),
-                    (ALTERNATE_LEVEL, ALTERNATE_LEVEL_NAME, TEMPLATE)]
+                    (ALTERNATE_LEVEL, ALTERNATE_LEVEL_NAME, FEATURE)]
 
 ALTERNATE_OBSTACLES = [(TIKI, TIKI_NAME, TEMPLATE),
-                       (WATER_GAP, 'waterGap', 'template'),
+                       (WATER_GAP1, WATER_GAP1_NAME, FEATURE),
+                       (WATER_GAP2, WATER_GAP2_NAME, FEATURE),
+                       (STONE_GAP1, STONE_GAP1_NAME, FEATURE),
+                       (STONE_GAP2, STONE_GAP2_NAME, FEATURE),
                        (STONE_TREE_TRUNK, STONE_TRUNK_NAME, TEMPLATE),
                        (STONE_TREE_TRUNK1, STONE_TRUNK1_NAME, TEMPLATE),
                        (TEMPLE_LEVEL_WATER, TEMPLE_LEVEL_WATER_NAME, FEATURE),
@@ -123,32 +132,29 @@ def display_template_match(frame, obstacle, maxLoc):
 def get_descriptors(img):
     '''
     Description:
-        Finds the ORB descriptors of an image
+        Finds the SIFT descriptors of an image
     Input:
         - img (nd.array): An image
     Output:
-        - The ORB descriptors of the image
+        - The SIFT descriptors of the image
     '''
-    orb = cv2.ORB_create()
+    orb = cv2.SIFT_create()
     _, descriptors = orb.detectAndCompute(img, None)
     return descriptors
 
 def get_descriptor_matches(des1, des2):
     '''
     Description:
-        Finds the matches between two ORB descriptors
+        Finds the matches between two SIFT descriptors
     Input:
-        - des1 (list): List of ORB descriptors for image one
-        - des2 (list): List of ORB descriptors for image two
+        - des1 (list): List of SIFT descriptors for image one
+        - des2 (list): List of SIFT descriptors for image two
     Output:
         - The number of matches between the descriptors
     '''
     # FLANN parameters
-    FLANN_INDEX_LSH = 6
-    index_params= dict(algorithm = FLANN_INDEX_LSH,
-                   table_number = 6, # 12
-                   key_size = 12,     # 20
-                   multi_probe_level = 2) #2
+    FLANN_INDEX_KDTREE = 0
+    index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
     search_params = dict(checks=50)   # or pass empty dictionary
 
     flann = cv2.FlannBasedMatcher(index_params,search_params)
@@ -180,6 +186,8 @@ def check_for_obstacle(frame, debug=0):
     global OBSTACLES
     global TEMPLE_OBSTACLES
     global ALTERNATE_OBSTACLES
+
+    frame_descriptors = get_descriptors(frame)
 
     for obstacle, name, method in OBSTACLES:
         # algorithm for template matching
@@ -239,40 +247,12 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            # alternate level jump not always working for stone
-            elif name == ALTERNATE_LEVEL_NAME and maxVal > 0.45:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
-                OBSTACLES = ALTERNATE_OBSTACLES
-                if debug:
-                    display_template_match(frame, obstacle, maxLoc)
-                    print(maxVal, name)
-                return
-
         # algorithm for feature matching
         if method == FEATURE:
-
-            feature_frame = np.copy(frame)
-
-            # crop frame based on current obstacle (crop dimensions 
-            # obtained through experimental measurments)
-            if name == GAP1_NAME or name == GAP2_NAME:
-                feature_frame = feature_frame[75:175, 150:350]
-
-            elif name == FIRE_TRAP_NAME:
-                feature_frame = feature_frame[20:175, 100:200]
-
-            elif name == TEMPLE_LEVEL_WATER_NAME:
-                feature_frame = feature_frame[0:100, 150:400]
-
-            elif name == TEMPLE_LEVEL_STONE_NAME:
-                feature_frame = feature_frame[100:200, 150:400]
             
-            frame_descriptors = get_descriptors(feature_frame)
             matches = get_descriptor_matches(obstacle, frame_descriptors)
 
-            if (name == GAP1_NAME or name == GAP2_NAME) and matches > 20:
+            if name == GAP1_NAME and matches > 60:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -281,7 +261,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif name == FIRE_TRAP_NAME and matches > 20:
+            elif name == GAP2_NAME and matches > 60:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -290,7 +270,52 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif (name == TEMPLE_LEVEL_WATER_NAME or name == TEMPLE_LEVEL_STONE_NAME) and matches > 20:
+            elif name == FIRE_TRAP_NAME and matches > 50:
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                if debug:
+                    print(name + ': ' + str(matches))
+                    print()
+                return
+
+            elif name == STONE_GAP1_NAME and matches > 50:
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                if debug:
+                    print(name + ': ' + str(matches))
+                    print()
+                return
+
+            elif name == STONE_GAP2_NAME and matches > 50:
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                if debug:
+                    print(name + ': ' + str(matches))
+                    print()
+                return
+
+            elif name == WATER_GAP1_NAME and matches > 20:
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                if debug:
+                    print(name + ': ' + str(matches))
+                    print()
+                return
+
+            elif name == WATER_GAP2_NAME and matches > 20:
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                if debug:
+                    print(name + ': ' + str(matches))
+                    print()
+                return
+
+            elif (name == TEMPLE_LEVEL_WATER_NAME or name == TEMPLE_LEVEL_STONE_NAME) and matches > 50:
                 kb.press('w')
                 sleep(0.025)
                 kb.release('w')
@@ -300,8 +325,20 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-        check_for_tree_trunk(frame, OBSTACLES == TEMPLE_OBSTACLES)
+            elif name == ALTERNATE_LEVEL_NAME and matches > 30:
+                sleep(0.025)
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                OBSTACLES = ALTERNATE_OBSTACLES
+                if debug:
+                    print(name + ': ' + str(matches))
+                    print()
+                return
+
         check_for_turn(frame, OBSTACLES == TEMPLE_OBSTACLES)
+
+        # check_for_tree_trunk(frame, OBSTACLES == TEMPLE_OBSTACLES)
 
 
 def check_for_turn(frame, temple):
@@ -321,12 +358,10 @@ def check_for_turn(frame, temple):
                 kb.press('a')
                 sleep(0.025)
                 kb.release('a')
-                print("turn left")
             elif patch2_average > 80:
                 kb.press('d')
                 sleep(0.025)
                 kb.release('d')
-                print("turn right")
     else:
         th, binary = cv2.threshold(frame, 75, 255, cv2.THRESH_BINARY)
         # patch0 = binary[100:150, 50:100]
@@ -342,12 +377,10 @@ def check_for_turn(frame, temple):
             kb.press('a')
             sleep(0.025)
             kb.release('a')
-            print("turn left", patch0_average, patch1_average, patch2_average)
         elif patch2_average > 55:
             kb.press('d')
             sleep(0.025)
             kb.release('d')
-            print("turn right", patch0_average, patch1_average, patch2_average)
 
 
 def check_for_tree_trunk(frame, temple):
@@ -362,7 +395,6 @@ def check_for_tree_trunk(frame, temple):
             kb.press('s')
             sleep(0.025)
             kb.release('s')
-            print("tree trunk", patch0_average, patch1_average, patch2_average)
 
 
 def main():
