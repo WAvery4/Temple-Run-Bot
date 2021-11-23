@@ -14,7 +14,7 @@ dim = {'top': 0, 'left': 0, 'width': 540, 'height': 960}
 def unpickle_desc(path):
     '''
     Description:
-        Unpickles a pickled SIFT description object
+        Unpickles a pickled SIFT descriptor object
     Input:
         - path (str): File path to a pickled descriptor
     Output:
@@ -27,9 +27,6 @@ def unpickle_desc(path):
 
 '''
 Temple Obstacle Templates
-
-*** TO-DO ***
-* Get images of the remaining obstacles
 '''
 TREE_ROOT1 = cv2.imread('./Obstacles/Temple/treeRoot1_2.png', 0)
 TREE_ROOT2 = cv2.imread('./Obstacles/Temple/treeRoot2_1.png', 0)
@@ -55,9 +52,6 @@ ALTERNATE_LEVEL_NAME = 'alternateLevel'
 
 '''
 Rock Obstacle Templates
-
-*** TO-DO ***
-* Get images of the remaining obstacles
 '''
 STONE_TREE_TRUNK = cv2.imread('./Obstacles/Water/stoneTreeSlide2.png', 0)
 STONE_TREE_TRUNK1 = cv2.imread('./Obstacles/Water/stoneTreeSlide3.png', 0)
@@ -73,11 +67,8 @@ TEMPLE_LEVEL_STONE_NAME = 'templeLevelStone'
 
 '''
 Water Obstacle Templates
-
-*** TO-DO ***
-* Get images of the remaining obstacles
 '''
-TIKI = cv2.imread('./Obstacles/Water/stoneGate2.png', 0)
+TIKI = unpickle_desc('./Obstacles/Temple/ORB/tiki.pickle')
 WATER_GAP1 = unpickle_desc('./Obstacles/Temple/ORB/waterGap1.pickle')
 WATER_GAP2 = unpickle_desc('./Obstacles/Temple/ORB/waterGap2.pickle')
 TEMPLE_LEVEL_WATER = unpickle_desc('./Obstacles/Temple/ORB/templeLevelWater.pickle')
@@ -89,9 +80,10 @@ TEMPLE_LEVEL_WATER_NAME = 'templeLevelWater'
 
 TEMPLATE = True
 FEATURE = False
+
 '''
 Each obstacle has a obstacle template for template matching
-or ORB descriptor for feature matching, a name, and a method.
+or SIFT descriptor for feature matching, a name, and a method.
 The name and method are to determine how to parse the frame for
 the given obstacle.
 '''
@@ -105,7 +97,7 @@ TEMPLE_OBSTACLES = [(TREE_ROOT1, TREE_ROOT1_NAME, TEMPLATE),
                     (FIRE_TRAP, FIRE_TRAP_NAME, FEATURE),
                     (ALTERNATE_LEVEL, ALTERNATE_LEVEL_NAME, FEATURE)]
 
-ALTERNATE_OBSTACLES = [(TIKI, TIKI_NAME, TEMPLATE),
+ALTERNATE_OBSTACLES = [(TIKI, TIKI_NAME, FEATURE),
                        (WATER_GAP1, WATER_GAP1_NAME, FEATURE),
                        (WATER_GAP2, WATER_GAP2_NAME, FEATURE),
                        (STONE_GAP1, STONE_GAP1_NAME, FEATURE),
@@ -145,7 +137,7 @@ def get_descriptors(img):
 def get_descriptor_matches(des1, des2):
     '''
     Description:
-        Finds the matches between two SIFT descriptors
+        Finds the number of matches between two SIFT descriptors
     Input:
         - des1 (list): List of SIFT descriptors for image one
         - des2 (list): List of SIFT descriptors for image two
@@ -178,6 +170,16 @@ def get_descriptor_matches(des1, des2):
     
     return np.sum(matchesMask)
 
+def jump():
+    kb.press('w')
+    sleep(0.025)
+    kb.release('w')
+
+def slide():
+    kb.press('s')
+    sleep(0.025)
+    kb.release('s')
+
 def check_for_obstacle(frame, debug=0):
     '''
     Loops through the obstacles associated with the current state and makes an action
@@ -196,9 +198,7 @@ def check_for_obstacle(frame, debug=0):
             _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
 
             if (name == TREE_ROOT1_NAME or name == TREE_ROOT4_NAME) and maxVal > 0.7:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+                jump()
                 if debug:
                     display_template_match(frame, obstacle, maxLoc)
                     print(maxVal, name)
@@ -206,9 +206,7 @@ def check_for_obstacle(frame, debug=0):
                 return
 
             elif name == TREE_ROOT3_NAME and maxVal > 0.75:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+                jump()
                 if debug:
                     display_template_match(frame, obstacle, maxLoc)
                     print(maxVal, name)
@@ -217,9 +215,7 @@ def check_for_obstacle(frame, debug=0):
 
             elif name == TREE_ROOT2_NAME and maxVal > 0.7:
                 sleep(0.005)  # sleep briefly since it detects this obstacle further back
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+                jump()
                 if debug:
                     display_template_match(frame, obstacle, maxLoc)
                     print(maxVal, name)
@@ -228,19 +224,7 @@ def check_for_obstacle(frame, debug=0):
 
             # stone trunk not fully working yet
             elif (name == STONE_TRUNK_NAME or name == STONE_TRUNK1_NAME) and maxVal > 0.4:
-                kb.press('s')
-                sleep(0.025)
-                kb.release('s')
-                if debug:
-                    display_template_match(frame, obstacle, maxLoc)
-                    print(maxVal, name)
-                    print()
-                return
-
-            elif name == TIKI_NAME and maxVal > 0.40:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+                slide()
                 if debug:
                     display_template_match(frame, obstacle, maxLoc)
                     print(maxVal, name)
@@ -253,83 +237,80 @@ def check_for_obstacle(frame, debug=0):
             matches = get_descriptor_matches(obstacle, frame_descriptors)
 
             if name == GAP1_NAME and matches > 60:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+                jump()
                 if debug:
                     print(name + ': ' + str(matches))
                     print()
                 return
 
             elif name == GAP2_NAME and matches > 60:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+                jump()
                 if debug:
                     print(name + ': ' + str(matches))
                     print()
                 return
 
-            elif name == FIRE_TRAP_NAME and matches > 50:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+            elif name == FIRE_TRAP_NAME and matches > 40:
+                jump()
                 if debug:
                     print(name + ': ' + str(matches))
                     print()
                 return
 
             elif name == STONE_GAP1_NAME and matches > 50:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+                jump()
                 if debug:
                     print(name + ': ' + str(matches))
                     print()
                 return
 
             elif name == STONE_GAP2_NAME and matches > 50:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+                jump()
                 if debug:
                     print(name + ': ' + str(matches))
                     print()
                 return
 
             elif name == WATER_GAP1_NAME and matches > 20:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+                jump()
                 if debug:
                     print(name + ': ' + str(matches))
                     print()
                 return
 
             elif name == WATER_GAP2_NAME and matches > 20:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+                jump()
                 if debug:
                     print(name + ': ' + str(matches))
                     print()
                 return
 
-            elif (name == TEMPLE_LEVEL_WATER_NAME or name == TEMPLE_LEVEL_STONE_NAME) and matches > 50:
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+            elif name == TIKI_NAME and matches > 10:
+                jump()
+                if debug:
+                    print(name + ': ' + str(matches))
+                    print()
+                return
+
+            elif name == TEMPLE_LEVEL_WATER_NAME  and matches > 50:
+                jump()
                 OBSTACLES = TEMPLE_OBSTACLES
                 if debug:
                     print(name + ': ' + str(matches))
                     print()
                 return
 
-            elif name == ALTERNATE_LEVEL_NAME and matches > 30:
-                sleep(0.025)
-                kb.press('w')
-                sleep(0.025)
-                kb.release('w')
+            elif name == TEMPLE_LEVEL_STONE_NAME and matches > 20:
+                jump()
+                OBSTACLES = TEMPLE_OBSTACLES
+                if debug:
+                    print(name + ': ' + str(matches))
+                    print()
+                return
+
+            elif name == ALTERNATE_LEVEL_NAME and matches > 20:
+                sleep(0.05)
+                jump()
                 OBSTACLES = ALTERNATE_OBSTACLES
                 if debug:
                     print(name + ': ' + str(matches))
@@ -411,7 +392,6 @@ def main():
             # focus on a 260x640 region of the frame
             obstacle_region = grayscale_frame[350:610,:] 
             
-            # template matching
             check_for_obstacle(obstacle_region, debug=1)
 
             if RECORDING:
