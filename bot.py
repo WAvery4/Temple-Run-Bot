@@ -7,7 +7,7 @@ from mss.windows import MSS as mss
 from pynput.keyboard import Controller, Listener
 
 RECORDING = 0          # set this flag high if you want the screen recorded
-DEBUG = 0              # set this flag high to enable debugging in the main loop
+DEBUG = 1              # set this flag high to enable debugging in the main loop
 
 dim = {'top': 0, 'left': 0, 'width': 540, 'height': 960}
 
@@ -213,7 +213,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif name == TREE_ROOT2_NAME and maxVal > 0.7:
+            elif name == TREE_ROOT2_NAME and maxVal > 0.70:
                 sleep(0.005)  # sleep briefly since it detects this obstacle further back
                 jump()
                 if debug:
@@ -233,7 +233,7 @@ def check_for_obstacle(frame, debug=0):
 
         # algorithm for feature matching
         if method == FEATURE:
-            
+
             matches = get_descriptor_matches(obstacle, frame_descriptors)
 
             if name == GAP1_NAME and matches > 60:
@@ -319,7 +319,7 @@ def check_for_obstacle(frame, debug=0):
 
         check_for_turn(frame, OBSTACLES == TEMPLE_OBSTACLES)
 
-        # check_for_tree_trunk(frame, OBSTACLES == TEMPLE_OBSTACLES)
+        check_for_tree_trunk(frame, OBSTACLES == TEMPLE_OBSTACLES)
 
 
 def check_for_turn(frame, temple):
@@ -345,9 +345,6 @@ def check_for_turn(frame, temple):
                 kb.release('d')
     else:
         th, binary = cv2.threshold(frame, 75, 255, cv2.THRESH_BINARY)
-        # patch0 = binary[100:150, 50:100]
-        # patch1 = binary[50:100, 250:300]
-        # patch2 = binary[100:150, 440:490]
         patch0 = binary[150:200, 50:100]
         patch1 = binary[100:150, 250:300]
         patch2 = binary[150:200, 440:490]
@@ -369,13 +366,20 @@ def check_for_tree_trunk(frame, temple):
         patch0 = frame[100:150, 100:150]
         patch1 = frame[0:50, 250:300]
         patch2 = frame[100:150, 400:450]
+        patch3 = frame[200:250, 250:300]
         patch0_average = np.mean(patch0)
         patch1_average = np.mean(patch1)
         patch2_average = np.mean(patch2)
-        if patch0_average < 45 and patch1_average < 45 and patch2_average < 45:
-            kb.press('s')
-            sleep(0.025)
-            kb.release('s')
+        patch3_average = np.mean(patch3)
+        if patch0_average < 50 and patch1_average < 50 and patch2_average < 50 and patch3_average > 70:
+            slide()
+            sleep(1)
+            # cv2.rectangle(frame, (100, 100), (150, 150), (255, 0, 0), 3)
+            # cv2.rectangle(frame, (250, 0), (300, 50), (255, 0, 0), 3)
+            # cv2.rectangle(frame, (400, 100), (450, 150), (255, 0, 0), 3)
+            # cv2.rectangle(frame, (250, 200), (300, 250), (255, 0, 0), 3)
+            # cv2.imshow('Tree Trunk', frame)
+            # print(patch0_average, patch1_average, patch2_average, patch3_average)
 
 
 def main():
