@@ -7,9 +7,9 @@ from mss.windows import MSS as mss
 from pynput.keyboard import Controller, Listener
 
 RECORDING = 0          # set this flag high if you want the screen recorded
-DEBUG = 1              # set this flag high to enable debugging in the main loop
+DEBUG = 0              # set this flag high to enable debugging in the main loop
 
-dim = {'top': 0, 'left': 0, 'width': 540, 'height': 960}
+dim = {'top': 0, 'left': 0, 'width': 540, 'height': 600}
 
 def unpickle_desc(path):
     '''
@@ -32,7 +32,7 @@ TREE_ROOT1 = cv2.imread('./Obstacles/Temple/treeRoot1_2.png', 0)
 TREE_ROOT2 = cv2.imread('./Obstacles/Temple/treeRoot2_1.png', 0)
 TREE_ROOT3 = cv2.imread('./Obstacles/Temple/treeRoot3.png', 0)
 TREE_ROOT4 = cv2.imread('./Obstacles/Temple/treeRoot4.png', 0)
-TREE_TRUNK = cv2.imread('./Obstacles/Temple/treeSlide1.png', 0)
+TREE_TRUNK = unpickle_desc('./Obstacles/Temple/ORB/treeSlide1.pickle')
 GAP1 = unpickle_desc('./Obstacles/Temple/ORB/gap1.pickle')
 GAP2 = unpickle_desc('./Obstacles/Temple/ORB/gap2.pickle')
 FIRE_TRAP = unpickle_desc('./Obstacles/Temple/ORB/fireTrap.pickle')
@@ -68,7 +68,7 @@ TEMPLE_LEVEL_STONE_NAME = 'templeLevelStone'
 '''
 Water Obstacle Templates
 '''
-TIKI = unpickle_desc('./Obstacles/Temple/ORB/tiki.pickle')
+TIKI = cv2.imread('./Obstacles/Water/stoneGate2.png', 0)
 WATER_GAP1 = unpickle_desc('./Obstacles/Temple/ORB/waterGap1.pickle')
 WATER_GAP2 = unpickle_desc('./Obstacles/Temple/ORB/waterGap2.pickle')
 TEMPLE_LEVEL_WATER = unpickle_desc('./Obstacles/Temple/ORB/templeLevelWater.pickle')
@@ -91,13 +91,13 @@ TEMPLE_OBSTACLES = [(TREE_ROOT1, TREE_ROOT1_NAME, TEMPLATE),
                     (TREE_ROOT2, TREE_ROOT2_NAME, TEMPLATE),
                     (TREE_ROOT3, TREE_ROOT3_NAME, TEMPLATE),
                     (TREE_ROOT4, TREE_ROOT4_NAME, TEMPLATE),
-                    # (TREE_TRUNK, TREE_TRUNK_NAME, TEMPLATE),
+                    (TREE_TRUNK, TREE_TRUNK_NAME, FEATURE),
                     (GAP1, GAP1_NAME, FEATURE),
                     (GAP2, GAP2_NAME, FEATURE),
                     (FIRE_TRAP, FIRE_TRAP_NAME, FEATURE),
                     (ALTERNATE_LEVEL, ALTERNATE_LEVEL_NAME, FEATURE)]
 
-ALTERNATE_OBSTACLES = [(TIKI, TIKI_NAME, FEATURE),
+ALTERNATE_OBSTACLES = [(TIKI, TIKI_NAME, TEMPLATE),
                        (WATER_GAP1, WATER_GAP1_NAME, FEATURE),
                        (WATER_GAP2, WATER_GAP2_NAME, FEATURE),
                        (STONE_GAP1, STONE_GAP1_NAME, FEATURE),
@@ -108,7 +108,6 @@ ALTERNATE_OBSTACLES = [(TIKI, TIKI_NAME, FEATURE),
                        (TEMPLE_LEVEL_STONE, TEMPLE_LEVEL_STONE_NAME, FEATURE)]
 
 OBSTACLES = TEMPLE_OBSTACLES
-
 kb = Controller()
 
 def display_template_match(frame, obstacle, maxLoc):
@@ -149,7 +148,7 @@ def get_descriptor_matches(des1, des2):
     index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
     search_params = dict(checks=50)   # or pass empty dictionary
 
-    flann = cv2.FlannBasedMatcher(index_params,search_params)
+    flann = cv2.FlannBasedMatcher(index_params, search_params)
 
     try:
         matches = flann.knnMatch(des1,des2,k=2)
@@ -231,6 +230,16 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
+            elif name == TIKI_NAME and maxVal > 0.40:
+                kb.press('w')
+                sleep(0.025)
+                kb.release('w')
+                if debug:
+                    display_template_match(frame, obstacle, maxLoc)
+                    print(maxVal, name)
+                    print()
+                return
+
         # algorithm for feature matching
         if method == FEATURE:
 
@@ -258,6 +267,7 @@ def check_for_obstacle(frame, debug=0):
                 return
 
             elif name == STONE_GAP1_NAME and matches > 50:
+                sleep(0.05)
                 jump()
                 if debug:
                     print(name + ': ' + str(matches))
@@ -265,6 +275,7 @@ def check_for_obstacle(frame, debug=0):
                 return
 
             elif name == STONE_GAP2_NAME and matches > 50:
+                sleep(0.05)
                 jump()
                 if debug:
                     print(name + ': ' + str(matches))
@@ -285,7 +296,7 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
-            elif name == TIKI_NAME and matches > 10:
+            elif name == TIKI_NAME and matches > 15:
                 jump()
                 if debug:
                     print(name + ': ' + str(matches))
@@ -309,7 +320,7 @@ def check_for_obstacle(frame, debug=0):
                 return
 
             elif name == ALTERNATE_LEVEL_NAME and matches > 20:
-                sleep(0.05)
+                sleep(0.25)
                 jump()
                 OBSTACLES = ALTERNATE_OBSTACLES
                 if debug:
@@ -317,9 +328,16 @@ def check_for_obstacle(frame, debug=0):
                     print()
                 return
 
+            elif name == TREE_TRUNK_NAME and matches > 10:
+                slide()
+                if debug:
+                    print(name + ': ' + str(matches))
+                    print()
+                return
+
         check_for_turn(frame, OBSTACLES == TEMPLE_OBSTACLES)
 
-        check_for_tree_trunk(frame, OBSTACLES == TEMPLE_OBSTACLES)
+        # check_for_tree_trunk(frame, OBSTACLES == TEMPLE_OBSTACLES)
 
 
 def check_for_turn(frame, temple):
@@ -382,12 +400,32 @@ def check_for_tree_trunk(frame, temple):
             # print(patch0_average, patch1_average, patch2_average, patch3_average)
 
 
+def on_press(key):
+    global OBSTACLES
+    global DEBUG
+    
+    try:
+        if (key.char == 'r'):
+            OBSTACLES = TEMPLE_OBSTACLES
+            print('Reset obstacles...')
+        elif (key.char == 'c'):
+            OBSTACLES = []
+            print('Cleared obstacles...')
+        elif (key.char == 'f'):
+            DEBUG = not DEBUG
+            print('Toggling FPS output...')
+    except:
+        print('Key not recognized')
+
+
 def main():
     if RECORDING:
         output = cv2.VideoWriter('ScreenCaptures/temple_run_4.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30, (540, 260), 0)
 
-    if DEBUG:
-        loop_time = time()
+    loop_time = time()
+
+    listener = Listener(on_press = on_press)
+    listener.start()
     
     with mss() as sct:
         while True:
