@@ -188,7 +188,14 @@ def check_for_obstacle(frame, debug=0):
     global TEMPLE_OBSTACLES
     global ALTERNATE_OBSTACLES
 
-    frame_descriptors = get_descriptors(frame)
+    if OBSTACLES == TEMPLE_OBSTACLES:
+        frame_descriptors = get_descriptors(frame[60:200, 30:610])
+        
+        alternate_level_descriptors = get_descriptors(frame[:100, 350:480])
+
+        tree_trunk_descriptors = get_descriptors(frame[:200, 30:610])
+    else:
+        frame_descriptors = get_descriptors(frame[:,30:610])
 
     for obstacle, name, method in OBSTACLES:
         # algorithm for template matching
@@ -242,8 +249,13 @@ def check_for_obstacle(frame, debug=0):
 
         # algorithm for feature matching
         if method == FEATURE:
-
-            matches = get_descriptor_matches(obstacle, frame_descriptors)
+            
+            if name == ALTERNATE_LEVEL_NAME:
+                matches = get_descriptor_matches(obstacle, alternate_level_descriptors)
+            elif name == TREE_TRUNK_NAME:
+                matches = get_descriptor_matches(obstacle, tree_trunk_descriptors)
+            else:
+                matches = get_descriptor_matches(obstacle, frame_descriptors)
 
             if name == GAP1_NAME and matches > 60:
                 jump()
@@ -320,7 +332,7 @@ def check_for_obstacle(frame, debug=0):
                 return
 
             elif name == ALTERNATE_LEVEL_NAME and matches > 20:
-                sleep(0.25)
+                sleep(0.025)
                 jump()
                 OBSTACLES = ALTERNATE_OBSTACLES
                 if debug:
