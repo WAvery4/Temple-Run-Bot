@@ -9,10 +9,10 @@ import os
 from grabscreen import grab_screen
 from getkeys import key_check
 
-dim = {'top': 0, 'left': 0, 'width': 540, 'height': 1000}
+dim = {'top': 0, 'left': 0, 'width': 540, 'height': 600}
 
-file_name = "D:/371Q_Project/TempleRun/Data/training_data.npy"
-file_name2 = "D:/371Q_Project/TempleRun/Data/target_data.npy"
+file_name = "D:/371Q_Project/TempleRun/DataNew/training_datanew.npy"
+file_name2 = "D:/371Q_Project/TempleRun/DataNew/target_datanew.npy"
 
 
 def get_data():
@@ -37,7 +37,7 @@ def main():
     image_data, targets = get_data()
     count = 0
 
-    while True:
+    while True: 
         keys = key_check()
         print("waiting press B to start")
         if keys == "B":
@@ -53,7 +53,7 @@ def main():
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             #image = cv2.Canny(image, threshold1=119, threshold2=250)
 
-            image = cv2.resize(image, (256, 256))
+            image = cv2.resize(image, (128, 128))
 
             # Debug line to show image
             #cv2.imshow("AI Peak", image)
