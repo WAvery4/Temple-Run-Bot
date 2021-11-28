@@ -279,7 +279,6 @@ def check_for_obstacle(frame, debug=0):
                 return
 
             elif name == STONE_GAP1_NAME and matches > 50:
-                sleep(0.05)
                 jump()
                 if debug:
                     print(name + ': ' + str(matches))
@@ -287,7 +286,6 @@ def check_for_obstacle(frame, debug=0):
                 return
 
             elif name == STONE_GAP2_NAME and matches > 50:
-                sleep(0.05)
                 jump()
                 if debug:
                     print(name + ': ' + str(matches))
